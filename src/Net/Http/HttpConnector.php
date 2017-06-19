@@ -83,6 +83,14 @@ class HttpConnector extends CachingConnector
         return $response;
     }
 
+    /**
+     * @return HttpOptions
+     */
+    public function getOptions()
+    {
+        return $this->options;
+    }
+
     private function getOrCreateUrlBuilder()
     {
         return $this->urlBuilder ?: $this->urlBuilder = new UrlBuilder($this->options);
