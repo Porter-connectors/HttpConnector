@@ -1,7 +1,8 @@
 <?php
 namespace ScriptFUSION\Porter\Net\Http;
 
-use ScriptFUSION\Porter\Connector\CachingConnector;
+use ScriptFUSION\Porter\Connector\ConnectionContext;
+use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Net\UrlBuilder;
 use ScriptFUSION\Porter\Options\EncapsulatedOptions;
 
@@ -11,7 +12,7 @@ use ScriptFUSION\Porter\Options\EncapsulatedOptions;
  * Enhanced error reporting is achieved by ignoring HTTP error codes in the wrapper, instead throwing
  * HttpServerException which includes the body of the response in the error message.
  */
-class HttpConnector extends CachingConnector
+class HttpConnector implements Connector
 {
     /** @var HttpOptions */
     private $options;
@@ -24,14 +25,13 @@ class HttpConnector extends CachingConnector
 
     public function __construct(HttpOptions $options = null)
     {
-        parent::__construct();
-
         $this->options = $options ?: new HttpOptions;
     }
 
     /**
      * {@inheritdoc}
      *
+     * @param ConnectionContext $context Runtime connection settings and methods.
      * @param string $source Source.
      * @param EncapsulatedOptions|null $options Optional. Options.
      *
@@ -41,46 +41,48 @@ class HttpConnector extends CachingConnector
      * @throws HttpConnectionException Failed to connect to source.
      * @throws HttpServerException Server sent an error code.
      */
-    public function fetchFreshData($source, EncapsulatedOptions $options = null)
+    public function fetch(ConnectionContext $context, $source, EncapsulatedOptions $options = null)
     {
         if ($options && !$options instanceof HttpOptions) {
             throw new \InvalidArgumentException('Options must be an instance of HttpOptions.');
         }
 
-        if (false === $response = @file_get_contents(
-            $this->getOrCreateUrlBuilder()->buildUrl(
-                $source,
-                $options ? $options->getQueryParameters() : [],
-                $this->getBaseUrl()
-            ),
-            false,
-            stream_context_create([
-                'http' =>
-                    // Instruct PHP to ignore HTTP error codes so Porter can handle them.
-                    ['ignore_errors' => true]
-                    + ($options ? $options->extractHttpContextOptions() : [])
-                    + $this->options->extractHttpContextOptions()
-                ,
-                'ssl' =>
-                    ($options ? $options->getSslOptions()->extractSslContextOptions() : [])
-                    + $this->options->getSslOptions()->extractSslContextOptions()
-                ,
-            ])
-        )) {
-            $error = error_get_last();
-            throw new HttpConnectionException($error['message'], $error['type']);
-        }
+        $url = $this->getOrCreateUrlBuilder()->buildUrl(
+            $source,
+            $options ? $options->getQueryParameters() : [],
+            $this->getBaseUrl()
+        );
 
-        $code = explode(' ', $http_response_header[0], 3)[1];
-        if ($code < 200 || $code >= 400) {
-            throw new HttpServerException(
-                "HTTP server responded with error: \"$http_response_header[0]\".\n\n$response",
-                $code,
-                $response
-            );
-        }
+        $streamContext = stream_context_create([
+            'http' =>
+                // Instruct PHP to ignore HTTP error codes so Porter can handle them instead.
+                ['ignore_errors' => true]
+                + ($options ? $options->extractHttpContextOptions() : [])
+                + $this->options->extractHttpContextOptions()
+            ,
+            'ssl' =>
+                ($options ? $options->getSslOptions()->extractSslContextOptions() : [])
+                + $this->options->getSslOptions()->extractSslContextOptions()
+            ,
+        ]);
 
-        return $response;
+        return $context->retry(function () use ($url, $streamContext) {
+            if (false === $response = @file_get_contents($url, false, $streamContext)) {
+                $error = error_get_last();
+                throw new HttpConnectionException($error['message'], $error['type']);
+            }
+
+            $code = explode(' ', $http_response_header[0], 3)[1];
+            if ($code < 200 || $code >= 400) {
+                throw new HttpServerException(
+                    "HTTP server responded with error: \"$http_response_header[0]\".\n\n$response",
+                    $code,
+                    $response
+                );
+            }
+
+            return $response;
+        });
     }
 
     private function getOrCreateUrlBuilder()

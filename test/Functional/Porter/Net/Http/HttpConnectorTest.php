@@ -8,6 +8,8 @@ use ScriptFUSION\Porter\Net\Http\HttpOptions;
 use ScriptFUSION\Porter\Net\Http\HttpServerException;
 use ScriptFUSION\Porter\Specification\ImportSpecification;
 use ScriptFUSION\Retry\ExceptionHandler\ExponentialBackoffExceptionHandler;
+use ScriptFUSION\Retry\FailingTooHardException;
+use ScriptFUSIONTest\FixtureFactory;
 use Symfony\Component\Process\Process;
 
 final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
@@ -65,23 +67,28 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 
     public function testConnectionTimeout()
     {
-        $this->setExpectedException(HttpConnectionException::class);
+        try {
+            $this->fetch();
 
-        $this->fetch();
+            self::fail('Expected FailingTooHardException exception.');
+        } catch (FailingTooHardException $exception) {
+            self::assertInstanceOf(HttpConnectionException::class, $exception->getPrevious());
+        }
     }
 
     public function testErrorResponse()
     {
         $server = $this->startServer('404');
 
-        $this->setExpectedExceptionRegExp(HttpServerException::class, '[^foo\z]m');
-
         try {
             $this->fetch();
-        } catch (HttpServerException $exception) {
-            $this->assertSame('foo', $exception->getBody());
 
-            throw $exception;
+            self::fail('Expected FailingTooHardException exception.');
+        } catch (FailingTooHardException $exception) {
+            /** @var HttpServerException $innerException */
+            self::assertInstanceOf(HttpServerException::class, $innerException = $exception->getPrevious());
+            self::assertSame('foo', $innerException->getBody());
+            self::assertStringEndsWith("\n\nfoo", $innerException->getMessage());
         } finally {
             $this->stopServer($server);
         }
@@ -149,12 +156,12 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
     {
         $connector = $connector ?: $this->connector;
 
-        return $connector->fetch('http://' . self::HOST . self::URI);
+        return $connector->fetch(FixtureFactory::createConnectionContext(), 'http://' . self::HOST . self::URI);
     }
 
     private function fetchViaSsl(Connector $connector)
     {
-        return $connector->fetch('https://' . self::SSL_HOST);
+        return $connector->fetch(FixtureFactory::createConnectionContext(), 'https://' . self::SSL_HOST);
     }
 
     /**
@@ -168,7 +175,9 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
             ImportSpecification::DEFAULT_FETCH_ATTEMPTS,
             $serverInvoker,
             function (\Exception $exception) {
-                if (!$exception instanceof HttpConnectionException) {
+                if (!$exception instanceof FailingTooHardException
+                    || !$exception->getPrevious() instanceof HttpConnectionException
+                ) {
                     return false;
                 }
 

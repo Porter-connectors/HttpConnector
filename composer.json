@@ -9,8 +9,8 @@
   ],
   "license": "LGPL-3.0",
   "require": {
-    "scriptfusion/porter": ">=3,<4",
-    "connectors/ssl": "^1",
+    "scriptfusion/porter": "4.0.x-dev",
+    "connectors/ssl": "^1.1",
     "zendframework/zend-uri": "^2"
   },
   "require-dev": {
