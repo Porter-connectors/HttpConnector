@@ -5,6 +5,7 @@ use ScriptFUSION\Porter\Connector\ConnectionContext;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Net\UrlBuilder;
 use ScriptFUSION\Porter\Options\EncapsulatedOptions;
+use ScriptFUSION\Porter\Type\StringType;
 
 /**
  * Fetches data from an HTTP server via the PHP wrapper.
@@ -35,7 +36,7 @@ class HttpConnector implements Connector
      * @param string $source Source.
      * @param EncapsulatedOptions|null $options Optional. Options.
      *
-     * @return string Response.
+     * @return HttpResponse Response.
      *
      * @throws \InvalidArgumentException Options is not an instance of HttpOptions.
      * @throws HttpConnectionException Failed to connect to source.
@@ -67,15 +68,19 @@ class HttpConnector implements Connector
         ]);
 
         return $context->retry(function () use ($url, $streamContext) {
-            if (false === $response = @file_get_contents($url, false, $streamContext)) {
+            if (false === $body = @file_get_contents($url, false, $streamContext)) {
                 $error = error_get_last();
                 throw new HttpConnectionException($error['message'], $error['type']);
             }
 
-            $code = explode(' ', $http_response_header[0], 3)[1];
+            // Build response.
+            list($version, $code, $descrption) = explode(' ', $status = array_shift($http_response_header), 3);
+            $response =
+                new HttpResponse($body, $http_response_header, $this->parseHttpVersion($version), $code, $descrption);
+
             if ($code < 200 || $code >= 400) {
                 throw new HttpServerException(
-                    "HTTP server responded with error: \"$http_response_header[0]\".\n\n$response",
+                    "HTTP server responded with error: \"$status\".\n\n$body",
                     $code,
                     $response
                 );
@@ -83,6 +88,15 @@ class HttpConnector implements Connector
 
             return $response;
         });
+    }
+
+    private function parseHttpVersion($version)
+    {
+        if (!StringType::startsWith($version, 'HTTP/')) {
+            throw new \InvalidArgumentException("Invalid HTTP version header: \"$version\".");
+        }
+
+        return explode('/', $version, 2)[1];
     }
 
     private function getOrCreateUrlBuilder()

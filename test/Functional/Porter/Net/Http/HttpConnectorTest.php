@@ -43,8 +43,8 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
             $this->stopServer($server);
         }
 
-        self::assertRegExp('[\AGET \Q' . self::HOST . self::URI . '\E HTTP/\d+\.\d+$]m', $response);
-        self::assertRegExp("[^$header$]m", $response);
+        self::assertRegExp('[\AGET \Q' . self::HOST . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
+        self::assertRegExp("[^$header$]m", $response->getBody());
     }
 
     /**
@@ -62,7 +62,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
             $this->stopServer($server);
         }
 
-        self::assertRegExp('[\AGET \Q' . self::SSL_HOST . '\E/ HTTP/\d+\.\d+$]m', $response);
+        self::assertRegExp('[\AGET \Q' . self::SSL_HOST . '\E/ HTTP/\d+\.\d+$]m', $response->getBody());
     }
 
     public function testConnectionTimeout()
@@ -87,7 +87,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         } catch (FailingTooHardException $exception) {
             /** @var HttpServerException $innerException */
             self::assertInstanceOf(HttpServerException::class, $innerException = $exception->getPrevious());
-            self::assertSame('foo', $innerException->getBody());
+            self::assertSame('foo', $innerException->getResponse()->getBody());
             self::assertStringEndsWith("\n\nfoo", $innerException->getMessage());
         } finally {
             $this->stopServer($server);
