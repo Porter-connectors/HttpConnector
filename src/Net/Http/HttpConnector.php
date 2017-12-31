@@ -5,7 +5,6 @@ use ScriptFUSION\Porter\Connector\ConnectionContext;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Net\UrlBuilder;
 use ScriptFUSION\Porter\Options\EncapsulatedOptions;
-use ScriptFUSION\Porter\Type\StringType;
 
 /**
  * Fetches data from an HTTP server via the PHP wrapper.
@@ -73,30 +72,17 @@ class HttpConnector implements Connector
                 throw new HttpConnectionException($error['message'], $error['type']);
             }
 
-            // Build response.
-            list($version, $code, $descrption) = explode(' ', $status = array_shift($http_response_header), 3);
-            $response =
-                new HttpResponse($body, $http_response_header, $this->parseHttpVersion($version), $code, $descrption);
+            $response = new HttpResponse($http_response_header, $body);
 
-            if ($code < 200 || $code >= 400) {
+            if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
                 throw new HttpServerException(
-                    "HTTP server responded with error: \"$status\".\n\n$body",
-                    $code,
+                    "HTTP server responded with error: \"{$response->getReasonPhrase()}\".\n\n$response",
                     $response
                 );
             }
 
             return $response;
         });
-    }
-
-    private function parseHttpVersion($version)
-    {
-        if (!StringType::startsWith($version, 'HTTP/')) {
-            throw new \InvalidArgumentException("Invalid HTTP version header: \"$version\".");
-        }
-
-        return explode('/', $version, 2)[1];
     }
 
     private function getOrCreateUrlBuilder()

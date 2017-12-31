@@ -18,8 +18,7 @@ final class HttpServerExceptionTest extends \PHPUnit_Framework_TestCase
     {
         $this->exception = new HttpServerException(
             'foo',
-            123,
-            $this->response = new HttpResponse('', [], '1.0', 200, 'OK')
+            $this->response = new HttpResponse(['HTTP/1 123'])
         );
     }
 

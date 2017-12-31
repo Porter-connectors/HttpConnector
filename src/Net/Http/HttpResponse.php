@@ -3,6 +3,7 @@ namespace ScriptFUSION\Porter\Net\Http;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
+use ScriptFUSION\Porter\Type\StringType;
 
 /**
  * Represents an HTTP server response.
@@ -11,7 +12,7 @@ final class HttpResponse implements ResponseInterface
 {
     private $body;
 
-    private $headers;
+    private $headers = [];
 
     private $version;
 
@@ -19,20 +20,53 @@ final class HttpResponse implements ResponseInterface
 
     private $statusPhrase;
 
+    private $previous;
+
     /**
-     * @param string $body
      * @param array $headers
-     * @param string $version
-     * @param int $statusCode
-     * @param string $statusPhrase
+     * @param string $body
      */
-    public function __construct($body, array $headers, $version, $statusCode, $statusPhrase)
+    public function __construct(array $headers, $body = null)
     {
+        $this->parseHeaders($headers);
         $this->body = "$body";
-        $this->headers = $this->parseHeaders($headers);
-        $this->version = "$version";
+    }
+
+    private function parseHeaders(array $headers)
+    {
+        $header = end($headers);
+
+        // Iterate headers in reverse because they may represent multiple responses.
+        do {
+            if (!preg_match('[^([^:\h]+):\h*(.*)$]', $header, $matches)) {
+                if (!self::isProbablyVersionHeader($header)) {
+                    throw new \InvalidArgumentException("Invalid header: \"$header\".");
+                }
+
+                $this->parseVersionHeader($header);
+
+                // If there are further headers, recursively delegate to parent responses.
+                if (key($headers) > 0) {
+                    $this->previous = new self(array_slice($headers, 0, key($headers)));
+                }
+
+                break;
+            }
+
+            $this->headers[$matches[1]][] = $matches[2];
+        } while ($header = prev($headers));
+    }
+
+    private static function isProbablyVersionHeader($header)
+    {
+        return StringType::startsWith($header, 'HTTP/');
+    }
+
+    private function parseVersionHeader($header)
+    {
+        @list($version, $statusCode, $this->statusPhrase) = explode(' ', $header, 3);
         $this->statusCode = (int)$statusCode;
-        $this->statusPhrase = "$statusPhrase";
+        $this->version = explode('/', $version, 2)[1];
     }
 
     public function __toString()
@@ -114,18 +148,13 @@ final class HttpResponse implements ResponseInterface
         return $this->statusPhrase;
     }
 
-    private function parseHeaders(array $headers)
+    /**
+     * Gets the previous response.
+     *
+     * @return HttpResponse|null
+     */
+    public function getPrevious()
     {
-        $parsedHeaders = [];
-
-        foreach ($headers as $header) {
-            if (!preg_match('[^([^:]+):\h*(.*)$]', $header, $matches)) {
-                throw new \InvalidArgumentException("Invalid header: \"$header\".");
-            }
-
-            $parsedHeaders[$matches[1]][] = $matches[2];
-        }
-
-        return $parsedHeaders;
+        return $this->previous;
     }
 }

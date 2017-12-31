@@ -14,15 +14,14 @@ class HttpServerException extends RecoverableConnectorException
     private $response;
 
     /**
-     * Initializes this instance with the specified HTTP error message, HTTP response code and response.
+     * Initializes this instance with the specified HTTP error message and response.
      *
      * @param string $message HTTP error message.
-     * @param int $code HTP response code.
      * @param HttpResponse $response Response.
      */
-    public function __construct($message, $code, HttpResponse $response)
+    public function __construct($message, HttpResponse $response)
     {
-        parent::__construct($message, $code);
+        parent::__construct($message, $response->getStatusCode());
 
         $this->response = $response;
     }

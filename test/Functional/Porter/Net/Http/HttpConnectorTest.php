@@ -5,6 +5,7 @@ use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
 use ScriptFUSION\Porter\Net\Http\HttpConnector;
 use ScriptFUSION\Porter\Net\Http\HttpOptions;
+use ScriptFUSION\Porter\Net\Http\HttpResponse;
 use ScriptFUSION\Porter\Net\Http\HttpServerException;
 use ScriptFUSION\Porter\Specification\ImportSpecification;
 use ScriptFUSION\Retry\ExceptionHandler\ExponentialBackoffExceptionHandler;
@@ -14,9 +15,9 @@ use Symfony\Component\Process\Process;
 
 final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 {
-    const HOST = '[::1]:12345';
-    const SSL_HOST = '[::1]:6666';
-    const URI = '/test?baz=qux';
+    const HOST = '127.0.0.1:12345';
+    const SSL_HOST = '127.0.0.1:6666';
+    const URI = 'feedback.php?baz=qux';
 
     private static $dir;
 
@@ -35,15 +36,18 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 
     public function testConnectionToLocalWebserver()
     {
-        $server = $this->startServer('feedback');
+        $server = $this->startServer();
+
+        $this->connector = new HttpConnector((new HttpOptions)->addHeader($header = 'Foo: Bar'));
 
         try {
-            $response = $this->fetch(new HttpConnector((new HttpOptions)->addHeader($header = 'Foo: Bar')));
+            $response = $this->fetch();
         } finally {
             $this->stopServer($server);
         }
 
-        self::assertRegExp('[\AGET \Q' . self::HOST . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
+        self::assertSame(200, $response->getStatusCode());
+        self::assertRegExp('[\AGET \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
         self::assertRegExp("[^$header$]m", $response->getBody());
     }
 
@@ -52,7 +56,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
      */
     public function testSslConnectionToLocalWebserver()
     {
-        $server = $this->startServer('feedback');
+        $server = $this->startServer();
 
         try {
             $certificate = $this->startSsl();
@@ -62,7 +66,11 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
             $this->stopServer($server);
         }
 
-        self::assertRegExp('[\AGET \Q' . self::SSL_HOST . '\E/ HTTP/\d+\.\d+$]m', $response->getBody());
+        self::assertSame(200, $response->getStatusCode());
+        self::assertRegExp(
+            '[\AGET \Q' . self::SSL_HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m',
+            $response->getBody()
+        );
     }
 
     public function testConnectionTimeout()
@@ -78,15 +86,17 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 
     public function testErrorResponse()
     {
-        $server = $this->startServer('404');
+        $server = $this->startServer();
 
         try {
-            $this->fetch();
+            $this->fetch('404.php');
 
             self::fail('Expected FailingTooHardException exception.');
         } catch (FailingTooHardException $exception) {
             /** @var HttpServerException $innerException */
             self::assertInstanceOf(HttpServerException::class, $innerException = $exception->getPrevious());
+
+            self::assertSame(404, $innerException->getResponse()->getStatusCode());
             self::assertSame('foo', $innerException->getResponse()->getBody());
             self::assertStringEndsWith("\n\nfoo", $innerException->getMessage());
         } finally {
@@ -95,13 +105,29 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param string $script
-     *
+     * Tests that the response object is built correctly when a server redirects to another page.
+     */
+    public function testRedirect()
+    {
+        $server = $this->startServer();
+
+        try {
+            $response = $this->fetch('redirect.php');
+        } finally {
+            $this->stopServer($server);
+        }
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertInstanceOf(HttpResponse::class, $prev = $response->getPrevious());
+        self::assertSame(302, $prev->getStatusCode());
+    }
+
+    /**
      * @return Process Server.
      */
-    private function startServer($script)
+    private function startServer()
     {
-        $server = new Process(['php', '-S', self::HOST, "$script.php"], self::$dir);
+        $server = new Process(['php', '-S', self::HOST, '-t', self::$dir]);
         $server->start();
 
         self::waitForHttpServer(function () {
@@ -125,7 +151,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         // Create SSL tunnel process.
         (new Process(
             // Generate self-signed SSL certificate in PEM format.
-            "openssl req -new -x509 -nodes -subj /CN=::1 -keyout '$certificate' -out '$certificate'
+            "openssl req -new -x509 -nodes -subj /CN=127.0.0.1 -keyout '$certificate' -out '$certificate'
 
             { stunnel4 -fd 0 || stunnel -fd 0; } <<.
                 # Disable PID to run as non-root user.
@@ -152,16 +178,17 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         `pkill stunnel`;
     }
 
-    private function fetch(Connector $connector = null)
+    private function fetch($url = self::URI)
     {
-        $connector = $connector ?: $this->connector;
-
-        return $connector->fetch(FixtureFactory::createConnectionContext(), 'http://' . self::HOST . self::URI);
+        return $this->connector->fetch(FixtureFactory::createConnectionContext(), 'http://' . self::HOST . "/$url");
     }
 
     private function fetchViaSsl(Connector $connector)
     {
-        return $connector->fetch(FixtureFactory::createConnectionContext(), 'https://' . self::SSL_HOST);
+        return $connector->fetch(
+            FixtureFactory::createConnectionContext(),
+            'https://' . self::SSL_HOST . '/' . self::URI
+        );
     }
 
     /**
@@ -197,11 +224,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
     private static function createSslConnector($certificate)
     {
         $connector = new HttpConnector($options = new HttpOptions);
-        $options->getSslOptions()
-            ->setCertificateAuthorityFilePath($certificate)
-            // IPv6 names don't work normally due to a bug/feature in PHP/OpenSSL.
-            ->setPeerName('::1')
-        ;
+        $options->getSslOptions()->setCertificateAuthorityFilePath($certificate);
 
         return $connector;
     }

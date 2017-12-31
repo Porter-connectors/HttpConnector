@@ -27,7 +27,7 @@ matrix:
 
 cache:
   directories:
-    - .composer/cache
+    - vendor
 
 install:
   - alias composer=composer\ -n && composer selfupdate
