@@ -3,8 +3,8 @@ namespace ScriptFUSION\Porter\Net\Http;
 
 use ScriptFUSION\Porter\Connector\ConnectionContext;
 use ScriptFUSION\Porter\Connector\Connector;
+use ScriptFUSION\Porter\Connector\ConnectorOptions;
 use ScriptFUSION\Porter\Net\UrlBuilder;
-use ScriptFUSION\Porter\Options\EncapsulatedOptions;
 
 /**
  * Fetches data from an HTTP server via the PHP wrapper.
@@ -12,7 +12,7 @@ use ScriptFUSION\Porter\Options\EncapsulatedOptions;
  * Enhanced error reporting is achieved by ignoring HTTP error codes in the wrapper, instead throwing
  * HttpServerException which includes the body of the response in the error message.
  */
-class HttpConnector implements Connector
+class HttpConnector implements Connector, ConnectorOptions
 {
     /** @var HttpOptions */
     private $options;
@@ -28,12 +28,16 @@ class HttpConnector implements Connector
         $this->options = $options ?: new HttpOptions;
     }
 
+    public function __clone()
+    {
+        $this->options = clone $this->options;
+    }
+
     /**
      * {@inheritdoc}
      *
      * @param ConnectionContext $context Runtime connection settings and methods.
      * @param string $source Source.
-     * @param EncapsulatedOptions|null $options Optional. Options.
      *
      * @return HttpResponse Response.
      *
@@ -41,15 +45,11 @@ class HttpConnector implements Connector
      * @throws HttpConnectionException Failed to connect to source.
      * @throws HttpServerException Server sent an error code.
      */
-    public function fetch(ConnectionContext $context, $source, EncapsulatedOptions $options = null)
+    public function fetch(ConnectionContext $context, $source)
     {
-        if ($options && !$options instanceof HttpOptions) {
-            throw new \InvalidArgumentException('Options must be an instance of HttpOptions.');
-        }
-
         $url = $this->getOrCreateUrlBuilder()->buildUrl(
             $source,
-            $options ? $options->getQueryParameters() : [],
+            $this->options->getQueryParameters(),
             $this->getBaseUrl()
         );
 
@@ -57,13 +57,9 @@ class HttpConnector implements Connector
             'http' =>
                 // Instruct PHP to ignore HTTP error codes so Porter can handle them instead.
                 ['ignore_errors' => true]
-                + ($options ? $options->extractHttpContextOptions() : [])
                 + $this->options->extractHttpContextOptions()
             ,
-            'ssl' =>
-                ($options ? $options->getSslOptions()->extractSslContextOptions() : [])
-                + $this->options->getSslOptions()->extractSslContextOptions()
-            ,
+            'ssl' => $this->options->getSslOptions()->extractSslContextOptions(),
         ]);
 
         return $context->retry(function () use ($url, $streamContext) {
@@ -83,6 +79,14 @@ class HttpConnector implements Connector
 
             return $response;
         });
+    }
+
+    /**
+     * @return HttpOptions
+     */
+    public function getOptions()
+    {
+        return $this->options;
     }
 
     private function getOrCreateUrlBuilder()
