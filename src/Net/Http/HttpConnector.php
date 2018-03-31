@@ -4,7 +4,6 @@ namespace ScriptFUSION\Porter\Net\Http;
 use ScriptFUSION\Porter\Connector\ConnectionContext;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Connector\ConnectorOptions;
-use ScriptFUSION\Porter\Net\UrlBuilder;
 
 /**
  * Fetches data from an HTTP server via the PHP wrapper.
@@ -16,12 +15,6 @@ class HttpConnector implements Connector, ConnectorOptions
 {
     /** @var HttpOptions */
     private $options;
-
-    /** @var UrlBuilder */
-    private $urlBuilder;
-
-    /** @var string */
-    private $baseUrl;
 
     public function __construct(HttpOptions $options = null)
     {
@@ -47,12 +40,6 @@ class HttpConnector implements Connector, ConnectorOptions
      */
     public function fetch(ConnectionContext $context, $source)
     {
-        $url = $this->getOrCreateUrlBuilder()->buildUrl(
-            $source,
-            $this->options->getQueryParameters(),
-            $this->getBaseUrl()
-        );
-
         $streamContext = stream_context_create([
             'http' =>
                 // Instruct PHP to ignore HTTP error codes so Porter can handle them instead.
@@ -62,8 +49,8 @@ class HttpConnector implements Connector, ConnectorOptions
             'ssl' => $this->options->getSslOptions()->extractSslContextOptions(),
         ]);
 
-        return $context->retry(function () use ($url, $streamContext) {
-            if (false === $body = @file_get_contents($url, false, $streamContext)) {
+        return $context->retry(function () use ($source, $streamContext) {
+            if (false === $body = @file_get_contents($source, false, $streamContext)) {
                 $error = error_get_last();
                 throw new HttpConnectionException($error['message'], $error['type']);
             }
@@ -87,30 +74,5 @@ class HttpConnector implements Connector, ConnectorOptions
     public function getOptions()
     {
         return $this->options;
-    }
-
-    private function getOrCreateUrlBuilder()
-    {
-        return $this->urlBuilder ?: $this->urlBuilder = new UrlBuilder($this->options);
-    }
-
-    /**
-     * @return string
-     */
-    public function getBaseUrl()
-    {
-        return $this->baseUrl;
-    }
-
-    /**
-     * @param $baseUrl
-     *
-     * @return $this
-     */
-    public function setBaseUrl($baseUrl)
-    {
-        $this->baseUrl = "$baseUrl";
-
-        return $this;
     }
 }
