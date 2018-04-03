@@ -3,7 +3,7 @@ namespace ScriptFUSION\Porter\Net\Http;
 
 use ScriptFUSION\Porter\Net\Ssl\SslOptions;
 use ScriptFUSION\Porter\Options\EncapsulatedOptions;
-use ScriptFUSION\Porter\Type\StringType;
+use ScriptFUSION\Type\StringType;
 
 /**
  * Encapsulates HTTP stream context options.

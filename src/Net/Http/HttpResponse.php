@@ -3,7 +3,7 @@ namespace ScriptFUSION\Porter\Net\Http;
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
-use ScriptFUSION\Porter\Type\StringType;
+use ScriptFUSION\Type\StringType;
 
 /**
  * Represents an HTTP server response.
