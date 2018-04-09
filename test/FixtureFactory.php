@@ -2,6 +2,7 @@
 namespace ScriptFUSIONTest;
 
 use ScriptFUSION\Porter\Connector\ConnectionContext;
+use ScriptFUSION\Porter\Connector\FetchExceptionHandler\FetchExceptionHandler;
 use ScriptFUSION\StaticClass;
 
 final class FixtureFactory
@@ -17,9 +18,7 @@ final class FixtureFactory
     {
         return new ConnectionContext(
             false,
-            function () {
-                // Intentionally empty.
-            },
+            \Mockery::mock(FetchExceptionHandler::class),
             1
         );
     }
