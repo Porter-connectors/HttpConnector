@@ -3,7 +3,7 @@ namespace ScriptFUSION\Porter\Net\Http;
 
 use ScriptFUSION\Porter\Net\Ssl\SslOptions;
 use ScriptFUSION\Porter\Options\EncapsulatedOptions;
-use ScriptFUSION\Porter\Type\StringType;
+use ScriptFUSION\Type\StringType;
 
 /**
  * Encapsulates HTTP stream context options.
@@ -17,10 +17,17 @@ final class HttpOptions extends EncapsulatedOptions
 
     public function __construct()
     {
+        $this->sslOptions = new SslOptions;
+
         $this->setDefaults([
             'queryParameters' => [],
             'header' => [],
         ]);
+    }
+
+    public function __clone()
+    {
+        $this->sslOptions = clone $this->sslOptions;
     }
 
     /**
@@ -28,7 +35,7 @@ final class HttpOptions extends EncapsulatedOptions
      */
     public function getSslOptions()
     {
-        return $this->sslOptions ?: $this->sslOptions = new SslOptions;
+        return $this->sslOptions;
     }
 
     /**

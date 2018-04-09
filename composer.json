@@ -9,9 +9,10 @@
   ],
   "license": "LGPL-3.0",
   "require": {
-    "scriptfusion/porter": ">=3,<4",
-    "connectors/ssl": "^1",
-    "zendframework/zend-uri": "^2"
+    "scriptfusion/porter": "^4",
+    "connectors/ssl": "^1.1",
+    "phptype/string": "^1",
+    "psr/http-message": "^1"
   },
   "require-dev": {
     "phpunit/phpunit": "^4.8",

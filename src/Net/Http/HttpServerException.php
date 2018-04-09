@@ -9,31 +9,30 @@ use ScriptFUSION\Porter\Connector\RecoverableConnectorException;
 class HttpServerException extends RecoverableConnectorException
 {
     /**
-     * @var string Response body.
+     * @var HttpResponse Response.
      */
-    private $body;
+    private $response;
 
     /**
-     * Initializes this instance with the specified HTTP error message, HTTP response code and response body.
+     * Initializes this instance with the specified HTTP error message and response.
      *
      * @param string $message HTTP error message.
-     * @param int $code HTP response code.
-     * @param string $body Response body.
+     * @param HttpResponse $response Response.
      */
-    public function __construct($message, $code, $body)
+    public function __construct($message, HttpResponse $response)
     {
-        parent::__construct($message, $code);
+        parent::__construct($message, $response->getStatusCode());
 
-        $this->body = "$body";
+        $this->response = $response;
     }
 
     /**
-     * Gets the response body.
+     * Gets the response.
      *
-     * @return string Response body.
+     * @return HttpResponse Response.
      */
-    public function getBody()
+    public function getResponse()
     {
-        return $this->body;
+        return $this->response;
     }
 }
