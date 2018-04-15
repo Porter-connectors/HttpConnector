@@ -49,13 +49,13 @@ class HttpConnector implements Connector, ConnectorOptions
             'ssl' => $this->options->getSslOptions()->extractSslContextOptions(),
         ]);
 
-        return $context->retry(function () use ($source, $streamContext) {
+        return $context->retry(static function () use ($source, $streamContext) {
             if (false === $body = @file_get_contents($source, false, $streamContext)) {
                 $error = error_get_last();
                 throw new HttpConnectionException($error['message'], $error['type']);
             }
 
-            $response = new HttpResponse($http_response_header, $body);
+            $response = HttpResponse::fromPhpWrapper($http_response_header, $body);
 
             if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
                 throw new HttpServerException(

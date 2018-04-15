@@ -1,14 +1,13 @@
 <?php
 namespace ScriptFUSION\Porter\Net\Http;
 
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamInterface;
+use Amp\Artax\Response;
 use ScriptFUSION\Type\StringType;
 
 /**
  * Represents an HTTP server response.
  */
-final class HttpResponse implements ResponseInterface
+final class HttpResponse
 {
     private $body;
 
@@ -22,17 +21,35 @@ final class HttpResponse implements ResponseInterface
 
     private $previous;
 
-    /**
-     * @param array $headers
-     * @param string $body
-     */
-    public function __construct(array $headers, $body = null)
+    private function __construct()
     {
-        $this->parseHeaders($headers);
-        $this->body = "$body";
+        // Intentionally empty. Use factory methods.
     }
 
-    private function parseHeaders(array $headers)
+    public static function fromPhpWrapper(array $headers, string $body = null): self
+    {
+        $response = new self;
+
+        $response->parseHeaders($headers);
+        $response->body = "$body";
+
+        return $response;
+    }
+
+    public static function fromArtaxResponse(Response $artax, string $body): self
+    {
+        $response = new self;
+
+        $response->headers = $artax->getHeaders();
+        $response->version = $artax->getProtocolVersion();
+        $response->statusCode = $artax->getStatus();
+        $response->statusPhrase = $artax->getReason();
+        $response->body = $body;
+
+        return $response;
+    }
+
+    private function parseHeaders(array $headers): void
     {
         $header = end($headers);
 
@@ -47,7 +64,7 @@ final class HttpResponse implements ResponseInterface
 
                 // If there are further headers, recursively delegate to parent responses.
                 if (key($headers) > 0) {
-                    $this->previous = new self(array_slice($headers, 0, key($headers)));
+                    $this->previous = self::fromPhpWrapper(\array_slice($headers, 0, key($headers)));
                 }
 
                 break;
@@ -57,12 +74,12 @@ final class HttpResponse implements ResponseInterface
         } while ($header = prev($headers));
     }
 
-    private static function isProbablyVersionHeader($header)
+    private static function isProbablyVersionHeader($header): bool
     {
         return StringType::startsWith($header, 'HTTP/');
     }
 
-    private function parseVersionHeader($header)
+    private function parseVersionHeader($header): void
     {
         @list($version, $statusCode, $this->statusPhrase) = explode(' ', $header, 3);
         $this->statusCode = (int)$statusCode;
@@ -79,17 +96,12 @@ final class HttpResponse implements ResponseInterface
         return $this->version;
     }
 
-    public function withProtocolVersion($version)
-    {
-        throw new NotImplementedException;
-    }
-
-    public function getHeaders()
+    public function getHeaders(): array
     {
         return $this->headers;
     }
 
-    public function hasHeader($name)
+    public function hasHeader($name): bool
     {
         return array_key_exists($name, $this->headers);
     }
@@ -103,44 +115,14 @@ final class HttpResponse implements ResponseInterface
         return $this->headers[$name];
     }
 
-    public function getHeaderLine($name)
-    {
-        throw new NotImplementedException;
-    }
-
-    public function withHeader($name, $value)
-    {
-        throw new NotImplementedException;
-    }
-
-    public function withAddedHeader($name, $value)
-    {
-        throw new NotImplementedException;
-    }
-
-    public function withoutHeader($name)
-    {
-        throw new NotImplementedException;
-    }
-
     public function getBody()
     {
         return $this->body;
     }
 
-    public function withBody(StreamInterface $body)
-    {
-        throw new NotImplementedException;
-    }
-
     public function getStatusCode()
     {
         return $this->statusCode;
-    }
-
-    public function withStatus($code, $reasonPhrase = '')
-    {
-        throw new NotImplementedException;
     }
 
     public function getReasonPhrase()
@@ -150,10 +132,8 @@ final class HttpResponse implements ResponseInterface
 
     /**
      * Gets the previous response.
-     *
-     * @return HttpResponse|null
      */
-    public function getPrevious()
+    public function getPrevious(): ?HttpResponse
     {
         return $this->previous;
     }

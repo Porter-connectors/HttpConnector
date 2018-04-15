@@ -1,7 +1,9 @@
 <?php
 namespace ScriptFUSIONTest\Functional\Porter\Net\Http;
 
+use Amp\Loop;
 use ScriptFUSION\Porter\Connector\Connector;
+use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
 use ScriptFUSION\Porter\Net\Http\HttpConnector;
 use ScriptFUSION\Porter\Net\Http\HttpOptions;
@@ -21,7 +23,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 
     private static $dir;
 
-    /** @var HttpConnector */
+    /** @var HttpConnector|AsyncHttpConnector */
     private $connector;
 
     public static function setUpBeforeClass()
@@ -71,6 +73,29 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
             '[\AGET \Q' . self::SSL_HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m',
             $response->getBody()
         );
+    }
+
+    /**
+     * Tests that an async connection can be established to the local echo server and responds as expected.
+     */
+    public function testAsyncConnectionToLocalWebserver(): void
+    {
+        $server = $this->startServer();
+
+        $this->connector = new AsyncHttpConnector;
+
+        try {
+            $response = $this->fetch();
+        } finally {
+            $this->stopServer($server);
+        }
+
+        self::assertInstanceOf(HttpResponse::class, $response);
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('OK', $response->getReasonPhrase());
+        self::assertSame('1.1', $response->getProtocolVersion());
+        self::assertTrue($response->hasHeader('x-powered-by'));
+        self::assertRegExp('[\AGET \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
     }
 
     public function testConnectionTimeout()
@@ -180,7 +205,14 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 
     private function fetch($url = self::URI)
     {
-        return $this->connector->fetch(FixtureFactory::createConnectionContext(), 'http://' . self::HOST . "/$url");
+        $context = FixtureFactory::createConnectionContext();
+        $fullUrl = 'http://' . self::HOST . "/$url";
+
+        if ($this->connector instanceof AsyncHttpConnector) {
+            return \Amp\Promise\wait($this->connector->fetchAsync($context, $fullUrl));
+        }
+
+        return $this->connector->fetch(FixtureFactory::createConnectionContext(), $fullUrl);
     }
 
     private function fetchViaSsl(Connector $connector)
