@@ -21,7 +21,7 @@
   },
   "autoload": {
     "psr-4": {
-      "ScriptFUSION\\Porter\\": "src"
+      "ScriptFUSION\\Porter\\Net\\Http\\": "src"
     }
   },
   "autoload-dev": {
