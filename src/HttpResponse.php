@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace ScriptFUSION\Porter\Net\Http;
 
 use Amp\Artax\Response;
@@ -70,7 +72,7 @@ final class HttpResponse
                 break;
             }
 
-            $this->headers[$matches[1]][] = $matches[2];
+            $this->headers[self::normalizeHeaderName($matches[1])][] = $matches[2];
         } while ($header = prev($headers));
     }
 
@@ -86,12 +88,12 @@ final class HttpResponse
         $this->version = explode('/', $version, 2)[1];
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         return $this->body;
     }
 
-    public function getProtocolVersion()
+    public function getProtocolVersion(): string
     {
         return $this->version;
     }
@@ -103,29 +105,29 @@ final class HttpResponse
 
     public function hasHeader($name): bool
     {
-        return array_key_exists($name, $this->headers);
+        return array_key_exists(self::normalizeHeaderName($name), $this->headers);
     }
 
-    public function getHeader($name)
+    public function getHeader($name): array
     {
         if (!$this->hasHeader($name)) {
             return [];
         }
 
-        return $this->headers[$name];
+        return $this->headers[self::normalizeHeaderName($name)];
     }
 
-    public function getBody()
+    public function getBody(): string
     {
         return $this->body;
     }
 
-    public function getStatusCode()
+    public function getStatusCode(): int
     {
         return $this->statusCode;
     }
 
-    public function getReasonPhrase()
+    public function getReasonPhrase(): string
     {
         return $this->statusPhrase;
     }
@@ -133,8 +135,13 @@ final class HttpResponse
     /**
      * Gets the previous response.
      */
-    public function getPrevious(): ?HttpResponse
+    public function getPrevious(): ?self
     {
         return $this->previous;
+    }
+
+    private static function normalizeHeaderName(string $headerName): string
+    {
+        return strtolower($headerName);
     }
 }

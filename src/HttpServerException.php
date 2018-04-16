@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace ScriptFUSION\Porter\Net\Http;
 
 use ScriptFUSION\Porter\Connector\RecoverableConnectorException;

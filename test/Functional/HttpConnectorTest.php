@@ -1,7 +1,8 @@
 <?php
+declare(strict_types=1);
+
 namespace ScriptFUSIONTest\Functional\Porter\Net\Http;
 
-use Amp\Loop;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
@@ -17,26 +18,20 @@ use Symfony\Component\Process\Process;
 
 final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 {
-    const HOST = '127.0.0.1:12345';
-    const SSL_HOST = '127.0.0.1:6666';
-    const URI = 'feedback.php?baz=qux';
-
-    private static $dir;
+    private const HOST = '127.0.0.1:12345';
+    private const SSL_HOST = '127.0.0.1:6666';
+    private const URI = 'feedback.php?baz=qux';
+    private const DIR = __DIR__ . '/servers';
 
     /** @var HttpConnector|AsyncHttpConnector */
     private $connector;
-
-    public static function setUpBeforeClass()
-    {
-        self::$dir = __DIR__ . '/servers';
-    }
 
     protected function setUp()
     {
         $this->connector = new HttpConnector;
     }
 
-    public function testConnectionToLocalWebserver()
+    public function testConnectionToLocalWebserver(): void
     {
         $server = $this->startServer();
 
@@ -56,7 +51,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
     /**
      * @requires OS Linux
      */
-    public function testSslConnectionToLocalWebserver()
+    public function testSslConnectionToLocalWebserver(): void
     {
         $server = $this->startServer();
 
@@ -98,7 +93,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         self::assertRegExp('[\AGET \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
     }
 
-    public function testConnectionTimeout()
+    public function testConnectionTimeout(): void
     {
         try {
             $this->fetch();
@@ -109,7 +104,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         }
     }
 
-    public function testErrorResponse()
+    public function testErrorResponse(): void
     {
         $server = $this->startServer();
 
@@ -132,7 +127,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
     /**
      * Tests that the response object is built correctly when a server redirects to another page.
      */
-    public function testRedirect()
+    public function testRedirect(): void
     {
         $server = $this->startServer();
 
@@ -150,9 +145,9 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
     /**
      * @return Process Server.
      */
-    private function startServer()
+    private function startServer(): Process
     {
-        $server = new Process(['php', '-S', self::HOST, '-t', self::$dir]);
+        $server = new Process(['php', '-S', self::HOST, '-t', self::DIR]);
         $server->start();
 
         self::waitForHttpServer(function () {
@@ -162,16 +157,16 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         return $server;
     }
 
-    private function stopServer(Process $server)
+    private function stopServer(Process $server): void
     {
         $server->stop();
     }
 
-    private function startSsl()
+    private function startSsl(): string
     {
         $accept = str_replace($filter = ['[', ']'], null, self::SSL_HOST);
         $connect = str_replace($filter, null, self::HOST);
-        $certificate = tempnam(sys_get_temp_dir(), null);
+        $certificate = tempnam(sys_get_temp_dir(), '');
 
         // Create SSL tunnel process.
         (new Process(
@@ -198,12 +193,12 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         return $certificate;
     }
 
-    private static function stopSsl()
+    private static function stopSsl(): void
     {
         `pkill stunnel`;
     }
 
-    private function fetch($url = self::URI)
+    private function fetch(string $url = self::URI)
     {
         $context = FixtureFactory::createConnectionContext();
         $fullUrl = 'http://' . self::HOST . "/$url";
@@ -212,7 +207,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
             return \Amp\Promise\wait($this->connector->fetchAsync($context, $fullUrl));
         }
 
-        return $this->connector->fetch(FixtureFactory::createConnectionContext(), $fullUrl);
+        return $this->connector->fetch($context, $fullUrl);
     }
 
     private function fetchViaSsl(Connector $connector)
@@ -228,7 +223,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
      *
      * @param \Closure $serverInvoker HTTP server invoker.
      */
-    private static function waitForHttpServer(\Closure $serverInvoker)
+    private static function waitForHttpServer(\Closure $serverInvoker): void
     {
         \ScriptFUSION\Retry\retry(
             ImportSpecification::DEFAULT_FETCH_ATTEMPTS,
@@ -248,12 +243,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    /**
-     * @param string $certificate
-     *
-     * @return HttpConnector
-     */
-    private static function createSslConnector($certificate)
+    private static function createSslConnector(string $certificate): HttpConnector
     {
         $connector = new HttpConnector($options = new HttpOptions);
         $options->getSslOptions()->setCertificateAuthorityFilePath($certificate);
