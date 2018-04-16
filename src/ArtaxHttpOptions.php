@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace ScriptFUSION\Porter\Net\Http;
 
 use Amp\Artax\Client;
+use Amp\Artax\Cookie\ArrayCookieJar;
+use Amp\Artax\Cookie\CookieJar;
 use ScriptFUSION\Porter\Options\EncapsulatedOptions;
 
 /**
@@ -11,6 +13,18 @@ use ScriptFUSION\Porter\Options\EncapsulatedOptions;
  */
 final class ArtaxHttpOptions extends EncapsulatedOptions
 {
+    private $cookieJar;
+
+    public function __construct()
+    {
+        $this->cookieJar = new ArrayCookieJar;
+    }
+
+    public function __clone()
+    {
+        $this->cookieJar = clone $this->cookieJar;
+    }
+
     public function setAutoEncoding(bool $autoEncoding): self
     {
         return $this->set(Client::OP_AUTO_ENCODING, $autoEncoding);
@@ -49,6 +63,11 @@ final class ArtaxHttpOptions extends EncapsulatedOptions
     public function setMaxBodyBytes(int $maxBodyBytes): self
     {
         return $this->set(Client::OP_MAX_BODY_BYTES, $maxBodyBytes);
+    }
+
+    public function getCookieJar(): CookieJar
+    {
+        return $this->cookieJar;
     }
 
     public function extractArtaxOptions(): array

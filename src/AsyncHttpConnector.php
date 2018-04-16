@@ -27,7 +27,7 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
     public function fetchAsync(ConnectionContext $context, string $source): Promise
     {
         return \Amp\call(function () use ($context, $source) {
-            $client = new DefaultClient;
+            $client = new DefaultClient($this->getOptions()->getCookieJar());
             $client->setOptions($this->getOptions()->extractArtaxOptions());
 
             return $context->retry(static function () use ($client, $source) {
