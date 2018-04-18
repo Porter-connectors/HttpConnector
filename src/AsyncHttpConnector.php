@@ -5,6 +5,8 @@ namespace ScriptFUSION\Porter\Net\Http;
 
 use Amp\Artax\DefaultClient;
 use Amp\Artax\Response;
+use Amp\Artax\SocketException;
+use Amp\Artax\TimeoutException;
 use Amp\Promise;
 use ScriptFUSION\Porter\Connector\AsyncConnector;
 use ScriptFUSION\Porter\Connector\ConnectionContext;
@@ -31,8 +33,14 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
             $client->setOptions($this->getOptions()->extractArtaxOptions());
 
             return $context->retry(static function () use ($client, $source) {
-                /** @var Response $response */
-                $response = yield $client->request($source);
+                try {
+                    /** @var Response $response */
+                    $response = yield $client->request($source);
+                } catch (TimeoutException | SocketException $exception) {
+                    // Convert exception to recoverable exception.
+                    throw new HttpConnectionException($exception->getMessage(), $exception->getCode(), $exception);
+                }
+
                 $body = yield $response->getBody();
 
                 return HttpResponse::fromArtaxResponse($response, $body);
