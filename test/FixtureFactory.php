@@ -18,7 +18,7 @@ final class FixtureFactory
     {
         return new ConnectionContext(
             false,
-            \Mockery::mock(FetchExceptionHandler::class),
+            \Mockery::spy(FetchExceptionHandler::class),
             1
         );
     }

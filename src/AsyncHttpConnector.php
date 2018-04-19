@@ -32,19 +32,29 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
             $client = new DefaultClient($this->getOptions()->getCookieJar());
             $client->setOptions($this->getOptions()->extractArtaxOptions());
 
-            return $context->retry(static function () use ($client, $source) {
-                try {
-                    /** @var Response $response */
-                    $response = yield $client->request($source);
-                } catch (TimeoutException | SocketException $exception) {
-                    // Convert exception to recoverable exception.
-                    throw new HttpConnectionException($exception->getMessage(), $exception->getCode(), $exception);
+            return $context->retryAsync(
+                static function () use ($client, $source) {
+                    return \Amp\call(
+                        static function () use ($client, $source) {
+                            try {
+                                /** @var Response $response */
+                                $response = yield $client->request($source);
+                            } catch (TimeoutException | SocketException $exception) {
+                                // Convert exception to recoverable exception.
+                                throw new HttpConnectionException(
+                                    $exception->getMessage(),
+                                    $exception->getCode(),
+                                    $exception
+                                );
+                            }
+
+                            $body = yield $response->getBody();
+
+                            return HttpResponse::fromArtaxResponse($response, $body);
+                        }
+                    );
                 }
-
-                $body = yield $response->getBody();
-
-                return HttpResponse::fromArtaxResponse($response, $body);
-            });
+            );
         });
     }
 
