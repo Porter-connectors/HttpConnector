@@ -35,26 +35,18 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
 
             return $context->retryAsync(
                 static function () use ($client, $source) {
-                    return \Amp\call(
-                        static function () use ($client, $source) {
-                            try {
-                                /** @var Response $response */
-                                $response = yield $client->request($source);
-                                // Retry HTTP timeouts, socket timeouts and DNS resolution errors.
-                            } catch (TimeoutException | SocketException | DnsException $exception) {
-                                // Convert exception to recoverable exception.
-                                throw new HttpConnectionException(
-                                    $exception->getMessage(),
-                                    $exception->getCode(),
-                                    $exception
-                                );
-                            }
+                    try {
+                        /** @var Response $response */
+                        $response = yield $client->request($source);
+                        // Retry HTTP timeouts, socket timeouts and DNS resolution errors.
+                    } catch (TimeoutException | SocketException | DnsException $exception) {
+                        // Convert exception to recoverable exception.
+                        throw new HttpConnectionException($exception->getMessage(), $exception->getCode(), $exception);
+                    }
 
-                            $body = yield $response->getBody();
+                    $body = yield $response->getBody();
 
-                            return HttpResponse::fromArtaxResponse($response, $body);
-                        }
-                    );
+                    return HttpResponse::fromArtaxResponse($response, $body);
                 }
             );
         });
