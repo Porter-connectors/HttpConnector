@@ -38,13 +38,12 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
                     try {
                         /** @var Response $response */
                         $response = yield $client->request($source);
+                        $body = yield $response->getBody();
                         // Retry HTTP timeouts, socket timeouts and DNS resolution errors.
                     } catch (TimeoutException | SocketException | DnsException $exception) {
                         // Convert exception to recoverable exception.
                         throw new HttpConnectionException($exception->getMessage(), $exception->getCode(), $exception);
                     }
-
-                    $body = yield $response->getBody();
 
                     return HttpResponse::fromArtaxResponse($response, $body);
                 }
