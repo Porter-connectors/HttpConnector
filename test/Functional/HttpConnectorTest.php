@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace ScriptFUSIONTest\Functional\Porter\Net\Http;
 
+use Amp\Coroutine;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
@@ -95,30 +96,24 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 
     public function testConnectionTimeout(): void
     {
-        try {
-            $this->fetch();
+        $this->setExpectedException(HttpConnectionException::class);
 
-            self::fail('Expected FailingTooHardException exception.');
-        } catch (FailingTooHardException $exception) {
-            self::assertInstanceOf(HttpConnectionException::class, $exception->getPrevious());
-        }
+        $this->fetch();
     }
 
     public function testErrorResponse(): void
     {
         $server = $this->startServer();
 
+        $this->setExpectedException(HttpServerException::class);
+
         try {
             $this->fetch('404.php');
+        } catch (HttpServerException $exception) {
+            $this->assertStringEndsWith('foo', $exception->getMessage());
+            $this->assertSame('foo', $exception->getResponse()->getBody());
 
-            self::fail('Expected FailingTooHardException exception.');
-        } catch (FailingTooHardException $exception) {
-            /** @var HttpServerException $innerException */
-            self::assertInstanceOf(HttpServerException::class, $innerException = $exception->getPrevious());
-
-            self::assertSame(404, $innerException->getResponse()->getStatusCode());
-            self::assertSame('foo', $innerException->getResponse()->getBody());
-            self::assertStringEndsWith("\n\nfoo", $innerException->getMessage());
+            throw $exception;
         } finally {
             $this->stopServer($server);
         }
@@ -204,17 +199,17 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         $fullUrl = 'http://' . self::HOST . "/$url";
 
         if ($this->connector instanceof AsyncHttpConnector) {
-            return \Amp\Promise\wait($this->connector->fetchAsync($context, $fullUrl));
+            return \Amp\Promise\wait(new Coroutine($this->connector->fetchAsync($fullUrl, $context)));
         }
 
-        return $this->connector->fetch($context, $fullUrl);
+        return $this->connector->fetch($fullUrl, $context);
     }
 
     private function fetchViaSsl(Connector $connector)
     {
         return $connector->fetch(
-            FixtureFactory::createConnectionContext(),
-            'https://' . self::SSL_HOST . '/' . self::URI
+            'https://' . self::SSL_HOST . '/' . self::URI,
+            FixtureFactory::createConnectionContext()
         );
     }
 
@@ -229,9 +224,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
             ImportSpecification::DEFAULT_FETCH_ATTEMPTS,
             $serverInvoker,
             function (\Exception $exception) {
-                if (!$exception instanceof FailingTooHardException
-                    || !$exception->getPrevious() instanceof HttpConnectionException
-                ) {
+                if (!$exception instanceof HttpConnectionException) {
                     return false;
                 }
 

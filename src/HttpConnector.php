@@ -6,6 +6,7 @@ namespace ScriptFUSION\Porter\Net\Http;
 use ScriptFUSION\Porter\Connector\ConnectionContext;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Connector\ConnectorOptions;
+use ScriptFUSION\Porter\Options\EncapsulatedOptions;
 
 /**
  * Fetches data from an HTTP server via the PHP wrapper.
@@ -15,7 +16,6 @@ use ScriptFUSION\Porter\Connector\ConnectorOptions;
  */
 class HttpConnector implements Connector, ConnectorOptions
 {
-    /** @var HttpOptions */
     private $options;
 
     public function __construct(HttpOptions $options = null)
@@ -31,8 +31,8 @@ class HttpConnector implements Connector, ConnectorOptions
     /**
      * {@inheritdoc}
      *
-     * @param ConnectionContext $context Runtime connection settings and methods.
      * @param string $source Source.
+     * @param ConnectionContext $context Runtime connection settings and methods.
      *
      * @return HttpResponse Response.
      *
@@ -40,7 +40,7 @@ class HttpConnector implements Connector, ConnectorOptions
      * @throws HttpConnectionException Failed to connect to source.
      * @throws HttpServerException Server sent an error code.
      */
-    public function fetch(ConnectionContext $context, $source)
+    public function fetch(string $source, ConnectionContext $context)
     {
         $streamContext = stream_context_create([
             'http' =>
@@ -51,29 +51,27 @@ class HttpConnector implements Connector, ConnectorOptions
             'ssl' => $this->options->getSslOptions()->extractSslContextOptions(),
         ]);
 
-        return $context->retry(static function () use ($source, $streamContext) {
-            if (false === $body = @file_get_contents($source, false, $streamContext)) {
-                $error = error_get_last();
-                throw new HttpConnectionException($error['message'], $error['type']);
-            }
+        if (false === $body = @file_get_contents($source, false, $streamContext)) {
+            $error = error_get_last();
+            throw new HttpConnectionException($error['message'], $error['type']);
+        }
 
-            $response = HttpResponse::fromPhpWrapper($http_response_header, $body);
+        $response = HttpResponse::fromPhpWrapper($http_response_header, $body);
 
-            if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
-                throw new HttpServerException(
-                    "HTTP server responded with error: \"{$response->getReasonPhrase()}\".\n\n$response",
-                    $response
-                );
-            }
+        if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
+            throw new HttpServerException(
+                "HTTP server responded with error: \"{$response->getReasonPhrase()}\".\n\n$response",
+                $response
+            );
+        }
 
-            return $response;
-        });
+        return $response;
     }
 
     /**
      * @return HttpOptions
      */
-    public function getOptions()
+    public function getOptions(): EncapsulatedOptions
     {
         return $this->options;
     }
