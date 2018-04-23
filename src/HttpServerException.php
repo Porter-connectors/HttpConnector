@@ -3,12 +3,12 @@ declare(strict_types=1);
 
 namespace ScriptFUSION\Porter\Net\Http;
 
-use ScriptFUSION\Porter\Connector\RecoverableConnectorException;
+use ScriptFUSION\Porter\Connector\Recoverable\RecoverableException;
 
 /**
  * The exception that is thrown when the server responds with an error code.
  */
-class HttpServerException extends RecoverableConnectorException
+class HttpServerException extends \RuntimeException implements RecoverableException
 {
     /**
      * @var HttpResponse Response.

@@ -1,13 +1,13 @@
 <?php
 namespace ScriptFUSIONTest\Unit\Porter\Net\Http;
 
-use ScriptFUSION\Porter\Connector\RecoverableConnectorException;
+use ScriptFUSION\Porter\Connector\Recoverable\RecoverableException;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
 
 final class HttpConnectionExceptionTest extends \PHPUnit_Framework_TestCase
 {
-    public function testRecoverable()
+    public function testRecoverable(): void
     {
-        self::assertInstanceOf(RecoverableConnectorException::class, new HttpConnectionException);
+        self::assertInstanceOf(RecoverableException::class, new HttpConnectionException);
     }
 }

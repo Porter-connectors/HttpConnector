@@ -1,7 +1,7 @@
 <?php
 namespace ScriptFUSIONTest\Unit\Porter\Net\Http;
 
-use ScriptFUSION\Porter\Connector\RecoverableConnectorException;
+use ScriptFUSION\Porter\Connector\Recoverable\RecoverableException;
 use ScriptFUSION\Porter\Net\Http\HttpResponse;
 use ScriptFUSION\Porter\Net\Http\HttpServerException;
 
@@ -14,7 +14,7 @@ final class HttpServerExceptionTest extends \PHPUnit_Framework_TestCase
 
     private $response;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->exception = new HttpServerException(
             'foo',
@@ -22,22 +22,22 @@ final class HttpServerExceptionTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function testRecoverable()
+    public function testRecoverable(): void
     {
-        self::assertInstanceOf(RecoverableConnectorException::class, $this->exception);
+        self::assertInstanceOf(RecoverableException::class, $this->exception);
     }
 
-    public function testMessage()
+    public function testMessage(): void
     {
         $this->assertSame('foo', $this->exception->getMessage());
     }
 
-    public function testCode()
+    public function testCode(): void
     {
         $this->assertSame(123, $this->exception->getCode());
     }
 
-    public function testBody()
+    public function testBody(): void
     {
         self::assertSame($this->response, $this->exception->getResponse());
     }
