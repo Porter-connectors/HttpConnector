@@ -13,7 +13,6 @@ use ScriptFUSION\Porter\Net\Http\HttpResponse;
 use ScriptFUSION\Porter\Net\Http\HttpServerException;
 use ScriptFUSION\Porter\Specification\ImportSpecification;
 use ScriptFUSION\Retry\ExceptionHandler\ExponentialBackoffExceptionHandler;
-use ScriptFUSION\Retry\FailingTooHardException;
 use ScriptFUSIONTest\FixtureFactory;
 use Symfony\Component\Process\Process;
 

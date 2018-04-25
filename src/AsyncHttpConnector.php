@@ -5,6 +5,7 @@ namespace ScriptFUSION\Porter\Net\Http;
 
 use Amp\Artax\DefaultClient;
 use Amp\Artax\DnsException;
+use Amp\Artax\Request;
 use Amp\Artax\Response;
 use Amp\Artax\SocketException;
 use Amp\Artax\TimeoutException;
@@ -34,7 +35,7 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
 
         try {
             /** @var Response $response */
-            $response = yield $client->request($source);
+            $response = yield $client->request($this->createRequest($source));
             $body = yield $response->getBody();
             // Retry HTTP timeouts, socket timeouts and DNS resolution errors.
         } catch (TimeoutException | SocketException | DnsException $exception) {
@@ -43,6 +44,13 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
         }
 
         return HttpResponse::fromArtaxResponse($response, $body);
+    }
+
+    private function createRequest(string $source): Request
+    {
+        return (new Request($source, $this->options->getMethod()))
+            ->withBody($this->options->getBody())
+        ;
     }
 
     /**
