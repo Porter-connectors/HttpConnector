@@ -10,9 +10,9 @@ use Amp\Artax\RequestBody;
 use ScriptFUSION\Porter\Options\EncapsulatedOptions;
 
 /**
- * Encapsulates Artax HTTP client options.
+ * Encapsulates async HTTP client options.
  */
-final class ArtaxHttpOptions extends EncapsulatedOptions
+final class AsyncHttpOptions extends EncapsulatedOptions
 {
     /**
      * @var string

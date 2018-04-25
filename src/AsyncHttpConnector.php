@@ -18,9 +18,9 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
 {
     private $options;
 
-    public function __construct(ArtaxHttpOptions $options = null)
+    public function __construct(AsyncHttpOptions $options = null)
     {
-        $this->options = $options ?: new ArtaxHttpOptions;
+        $this->options = $options ?: new AsyncHttpOptions;
     }
 
     public function __clone()
@@ -54,7 +54,7 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
     }
 
     /**
-     * @return ArtaxHttpOptions
+     * @return AsyncHttpOptions
      */
     public function getOptions(): EncapsulatedOptions
     {
