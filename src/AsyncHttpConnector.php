@@ -9,6 +9,7 @@ use Amp\Artax\Request;
 use Amp\Artax\Response;
 use Amp\Artax\SocketException;
 use Amp\Artax\TimeoutException;
+use Amp\Socket\CryptoException;
 use ScriptFUSION\Porter\Connector\AsyncConnector;
 use ScriptFUSION\Porter\Connector\ConnectionContext;
 use ScriptFUSION\Porter\Connector\ConnectorOptions;
@@ -37,13 +38,23 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
             /** @var Response $response */
             $response = yield $client->request($this->createRequest($source));
             $body = yield $response->getBody();
-            // Retry HTTP timeouts, socket timeouts and DNS resolution errors.
-        } catch (TimeoutException | SocketException | DnsException $exception) {
+            // Retry HTTP timeouts, socket timeouts, DNS resolution and crypto negotiation errors.
+        } catch (TimeoutException | SocketException | DnsException | CryptoException $exception) {
             // Convert exception to recoverable exception.
             throw new HttpConnectionException($exception->getMessage(), $exception->getCode(), $exception);
         }
 
-        return HttpResponse::fromArtaxResponse($response, $body);
+        $response = HttpResponse::fromArtaxResponse($response, $body);
+
+        $code = $response->getStatusCode();
+        if ($code < 200 || $code >= 400) {
+            throw new HttpServerException(
+                "HTTP server responded with error: $code \"{$response->getReasonPhrase()}\".\n\n$response",
+                $response
+            );
+        }
+
+        return $response;
     }
 
     private function createRequest(string $source): Request

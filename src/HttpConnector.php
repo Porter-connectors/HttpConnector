@@ -40,7 +40,7 @@ class HttpConnector implements Connector, ConnectorOptions
      * @throws HttpConnectionException Failed to connect to source.
      * @throws HttpServerException Server sent an error code.
      */
-    public function fetch(string $source, ConnectionContext $context)
+    public function fetch(string $source, ConnectionContext $context): HttpResponse
     {
         $streamContext = stream_context_create([
             'http' =>
@@ -58,9 +58,10 @@ class HttpConnector implements Connector, ConnectorOptions
 
         $response = HttpResponse::fromPhpWrapper($http_response_header, $body);
 
-        if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
+        $code = $response->getStatusCode();
+        if ($code < 200 || $code >= 400) {
             throw new HttpServerException(
-                "HTTP server responded with error: \"{$response->getReasonPhrase()}\".\n\n$response",
+                "HTTP server responded with error: $code \"{$response->getReasonPhrase()}\".\n\n$response",
                 $response
             );
         }
