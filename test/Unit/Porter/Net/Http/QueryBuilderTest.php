@@ -82,6 +82,13 @@ final class QueryBuilderTest extends \PHPUnit_Framework_TestCase
                 ['quux' => 'quuz'],
                 'http://example.com?quux=quuz&foo=bar#baz?qux',
             ],
+
+            // Tests that format specifiers in URL do not break sprintf().
+            'Format specifier (sprintf)' => [
+                'http://example.com',
+                ['foo' => '%s'],
+                'http://example.com?foo=%25s',
+            ],
         ];
     }
 }

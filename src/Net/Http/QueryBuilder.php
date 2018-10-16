@@ -38,6 +38,13 @@ final class QueryBuilder
         $prefix = substr($url, 0, $pos);
         $suffix = substr($url, $pos);
 
-        return sprintf("$prefix%s$queryString%s$suffix", $hasQuery ? '' : '?', $hasQuery ? '&' : '');
+        return sprintf(
+            '%s%s%s%s%s',
+            $prefix,
+            $hasQuery ? '' : '?',
+            $queryString,
+            $hasQuery ? '&' : '',
+            $suffix
+        );
     }
 }
