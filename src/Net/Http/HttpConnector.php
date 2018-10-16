@@ -40,6 +40,8 @@ class HttpConnector implements Connector, ConnectorOptions
      */
     public function fetch(ConnectionContext $context, $source)
     {
+        $url = QueryBuilder::mergeQuery($source, $this->options->getQueryParameters());
+
         $streamContext = stream_context_create([
             'http' =>
                 // Instruct PHP to ignore HTTP error codes so Porter can handle them instead.
@@ -49,8 +51,8 @@ class HttpConnector implements Connector, ConnectorOptions
             'ssl' => $this->options->getSslOptions()->extractSslContextOptions(),
         ]);
 
-        return $context->retry(function () use ($source, $streamContext) {
-            if (false === $body = @file_get_contents($source, false, $streamContext)) {
+        return $context->retry(static function () use ($url, $streamContext) {
+            if (false === $body = @file_get_contents($url, false, $streamContext)) {
                 $error = error_get_last();
                 throw new HttpConnectionException($error['message'], $error['type']);
             }

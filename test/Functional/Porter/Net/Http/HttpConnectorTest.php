@@ -52,6 +52,24 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Tests that query options are passed to the server.
+     */
+    public function testQueryBuilder()
+    {
+        $server = $this->startServer();
+
+        $this->connector = new HttpConnector((new HttpOptions)->setQueryParameters(['foo' => 'bar']));
+
+        try {
+            $response = $this->fetch();
+        } finally {
+            $this->stopServer($server);
+        }
+
+        self::assertRegExp('[\AGET \Q' . self::HOST . '\E/[^ ]+\?foo=bar\b]', $response->getBody());
+    }
+
+    /**
      * @requires OS Linux
      */
     public function testSslConnectionToLocalWebserver()
