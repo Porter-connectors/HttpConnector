@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace ScriptFUSIONTest\Functional\Porter\Net\Http;
 
 use Amp\Coroutine;
+use Amp\Loop;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
@@ -15,6 +16,7 @@ use ScriptFUSION\Porter\Specification\ImportSpecification;
 use ScriptFUSION\Retry\ExceptionHandler\ExponentialBackoffExceptionHandler;
 use ScriptFUSIONTest\FixtureFactory;
 use Symfony\Component\Process\Process;
+use function Amp\Promise\wait;
 
 final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 {
@@ -194,14 +196,13 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 
     private function fetch(string $url = self::URI)
     {
-        $context = FixtureFactory::createConnectionContext();
         $fullUrl = 'http://' . self::HOST . "/$url";
 
         if ($this->connector instanceof AsyncHttpConnector) {
-            return \Amp\Promise\wait(new Coroutine($this->connector->fetchAsync($fullUrl, $context)));
+            return wait($this->connector->fetchAsync($fullUrl));
         }
 
-        return $this->connector->fetch($fullUrl, $context);
+        return $this->connector->fetch($fullUrl);
     }
 
     private function fetchViaSsl(Connector $connector)

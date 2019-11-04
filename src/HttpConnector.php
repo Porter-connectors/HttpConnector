@@ -32,7 +32,6 @@ class HttpConnector implements Connector, ConnectorOptions
      * {@inheritdoc}
      *
      * @param string $source Source.
-     * @param ConnectionContext $context Runtime connection settings and methods.
      *
      * @return HttpResponse Response.
      *
@@ -40,7 +39,7 @@ class HttpConnector implements Connector, ConnectorOptions
      * @throws HttpConnectionException Failed to connect to source.
      * @throws HttpServerException Server sent an error code.
      */
-    public function fetch(string $source, ConnectionContext $context): HttpResponse
+    public function fetch(string $source): HttpResponse
     {
         $streamContext = stream_context_create([
             'http' =>

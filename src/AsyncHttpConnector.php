@@ -10,11 +10,12 @@ use Amp\Artax\Response;
 use Amp\Artax\SocketException;
 use Amp\Artax\TimeoutException;
 use Amp\ByteStream\StreamException;
+use Amp\Promise;
 use Amp\Socket\CryptoException;
 use ScriptFUSION\Porter\Connector\AsyncConnector;
-use ScriptFUSION\Porter\Connector\ConnectionContext;
 use ScriptFUSION\Porter\Connector\ConnectorOptions;
 use ScriptFUSION\Porter\Options\EncapsulatedOptions;
+use function Amp\call;
 
 class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
 {
@@ -30,33 +31,35 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
         $this->options = clone $this->options;
     }
 
-    public function fetchAsync(string $source, ConnectionContext $context)
+    public function fetchAsync(string $source): Promise
     {
-        $client = new DefaultClient($this->options->getCookieJar());
-        $client->setOptions($this->options->extractArtaxOptions());
+        return call(function () use ($source): \Generator {
+            $client = new DefaultClient($this->options->getCookieJar());
+            $client->setOptions($this->options->extractArtaxOptions());
 
-        try {
-            /** @var Response $response */
-            $response = yield $client->request($this->createRequest($source));
-            $body = yield $response->getBody();
-            // Retry HTTP timeouts, socket timeouts, DNS resolution, crypto negotiation and connection reset errors.
-        } catch (TimeoutException | SocketException | DnsException | CryptoException | StreamException $exception) {
-            // Convert exception to recoverable exception.
-            throw new HttpConnectionException($exception->getMessage(), $exception->getCode(), $exception);
-        }
+            try {
+                /** @var Response $response */
+                $response = yield $client->request($this->createRequest($source));
+                $body = yield $response->getBody();
+                // Retry HTTP timeouts, socket timeouts, DNS resolution, crypto negotiation and connection reset errors.
+            } catch (TimeoutException|SocketException|DnsException|CryptoException|StreamException $exception) {
+                // Convert exception to recoverable exception.
+                throw new HttpConnectionException($exception->getMessage(), $exception->getCode(), $exception);
+            }
 
-        $response = HttpResponse::fromArtaxResponse($response, $body);
+            $response = HttpResponse::fromArtaxResponse($response, $body);
 
-        $code = $response->getStatusCode();
-        if ($code < 200 || $code >= 400) {
-            throw new HttpServerException(
-                // TODO: truncate response in exception message.
-                "HTTP server responded with error: $code \"{$response->getReasonPhrase()}\".\n\n$response",
-                $response
-            );
-        }
+            $code = $response->getStatusCode();
+            if ($code < 200 || $code >= 400) {
+                throw new HttpServerException(
+                    // TODO: truncate response in exception message.
+                    "HTTP server responded with error: $code \"{$response->getReasonPhrase()}\".\n\n$response",
+                    $response
+                );
+            }
 
-        return $response;
+            return $response;
+        });
     }
 
     private function createRequest(string $source): Request

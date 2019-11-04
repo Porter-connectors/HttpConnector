@@ -9,10 +9,10 @@
   ],
   "license": "LGPL-3.0",
   "require": {
-    "scriptfusion/porter": "5.0.x-dev",
+    "scriptfusion/porter": "dev-master as 5",
     "connectors/ssl": "5.0.x-dev",
     "phptype/string": "^1",
-    "amphp/artax": "^3",
+    "amphp/http-client": "^3",
     "amphp/process": "^0.3"
   },
   "require-dev": {
