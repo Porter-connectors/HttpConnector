@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace ScriptFUSION\Porter\Net\Http;
 
-use Amp\Artax\Response;
+use Amp\Http\Client\Response;
 use ScriptFUSION\Type\StringType;
 
 /**
@@ -38,14 +38,14 @@ final class HttpResponse
         return $response;
     }
 
-    public static function fromArtaxResponse(Response $artax, string $body): self
+    public static function fromAmpResponse(Response $ampResponse, string $body): self
     {
         $response = new self;
 
-        $response->headers = $artax->getHeaders();
-        $response->version = $artax->getProtocolVersion();
-        $response->statusCode = $artax->getStatus();
-        $response->statusPhrase = $artax->getReason();
+        $response->headers = $ampResponse->getHeaders();
+        $response->version = $ampResponse->getProtocolVersion();
+        $response->statusCode = $ampResponse->getStatus();
+        $response->statusPhrase = $ampResponse->getReason();
         $response->body = $body;
 
         return $response;

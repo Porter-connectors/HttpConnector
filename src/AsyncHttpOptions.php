@@ -3,10 +3,8 @@ declare(strict_types=1);
 
 namespace ScriptFUSION\Porter\Net\Http;
 
-use Amp\Artax\Client;
-use Amp\Artax\Cookie\ArrayCookieJar;
-use Amp\Artax\Cookie\CookieJar;
-use Amp\Artax\RequestBody;
+use Amp\Http\Client\HttpClient;
+use Amp\Http\Client\RequestBody;
 use ScriptFUSION\Porter\Options\EncapsulatedOptions;
 
 /**
@@ -42,7 +40,7 @@ final class AsyncHttpOptions extends EncapsulatedOptions
 
     public function setAutoEncoding(bool $autoEncoding): self
     {
-        return $this->set(Client::OP_AUTO_ENCODING, $autoEncoding);
+        return $this->set(HttpClient::OP_AUTO_ENCODING, $autoEncoding);
     }
 
     public function setTransferTimeout(int $timeout): self

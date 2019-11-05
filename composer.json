@@ -12,7 +12,7 @@
     "scriptfusion/porter": "dev-master as 5",
     "connectors/ssl": "5.0.x-dev",
     "phptype/string": "^1",
-    "amphp/http-client": "^3",
+    "amphp/http-client": "v4.0.0-rc7",
     "amphp/process": "^0.3"
   },
   "require-dev": {
