@@ -3,22 +3,24 @@ declare(strict_types=1);
 
 namespace ScriptFUSIONTest\Functional\Porter\Net\Http;
 
-use Amp\Coroutine;
-use Amp\Loop;
+use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Connector\Connector;
+use ScriptFUSION\Porter\Connector\DataSource;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
+use ScriptFUSION\Porter\Net\Http\AsyncHttpDataSource;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
 use ScriptFUSION\Porter\Net\Http\HttpConnector;
+use ScriptFUSION\Porter\Net\Http\HttpDataSource;
 use ScriptFUSION\Porter\Net\Http\HttpOptions;
 use ScriptFUSION\Porter\Net\Http\HttpResponse;
 use ScriptFUSION\Porter\Net\Http\HttpServerException;
 use ScriptFUSION\Porter\Specification\ImportSpecification;
 use ScriptFUSION\Retry\ExceptionHandler\ExponentialBackoffExceptionHandler;
-use ScriptFUSIONTest\FixtureFactory;
 use Symfony\Component\Process\Process;
 use function Amp\Promise\wait;
+use function ScriptFUSION\Retry\retry;
 
-final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
+final class HttpConnectorTest extends TestCase
 {
     private const HOST = '127.0.0.1:12345';
     private const SSL_HOST = '127.0.0.1:6666';
@@ -37,10 +39,8 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
     {
         $server = $this->startServer();
 
-        $this->connector = new HttpConnector((new HttpOptions)->addHeader($header = 'Foo: Bar'));
-
         try {
-            $response = $this->fetch();
+            $response = $this->fetch(self::buildDataSource()->addHeader($header = 'Foo: Bar'));
         } finally {
             $this->stopServer($server);
         }
@@ -82,7 +82,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         $this->connector = new AsyncHttpConnector;
 
         try {
-            $response = $this->fetch();
+            $response = $this->fetch(self::buildAsyncDataSource());
         } finally {
             $this->stopServer($server);
         }
@@ -97,19 +97,19 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 
     public function testConnectionTimeout(): void
     {
-        $this->setExpectedException(HttpConnectionException::class);
+        $this->expectException(HttpConnectionException::class);
 
-        $this->fetch();
+        $this->fetch(self::buildDataSource());
     }
 
     public function testErrorResponse(): void
     {
         $server = $this->startServer();
 
-        $this->setExpectedException(HttpServerException::class);
+        $this->expectException(HttpServerException::class);
 
         try {
-            $this->fetch('404.php');
+            $this->fetch(self::buildDataSource('404.php'));
         } catch (HttpServerException $exception) {
             $this->assertStringEndsWith('foo', $exception->getMessage());
             $this->assertSame('foo', $exception->getResponse()->getBody());
@@ -128,7 +128,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         $server = $this->startServer();
 
         try {
-            $response = $this->fetch('redirect.php');
+            $response = $this->fetch(self::buildDataSource('redirect.php'));
         } finally {
             $this->stopServer($server);
         }
@@ -147,7 +147,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
         $server->start();
 
         self::waitForHttpServer(function () {
-            $this->fetch();
+            $this->fetch(self::buildDataSource());
         });
 
         return $server;
@@ -182,7 +182,7 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 ."
         ))->start();
 
-        self::waitForHttpServer(function () use ($certificate) {
+        self::waitForHttpServer(function () use ($certificate): void {
             $this->fetchViaSsl(self::createSslConnector($certificate));
         });
 
@@ -191,26 +191,31 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
 
     private static function stopSsl(): void
     {
-        `pkill stunnel`;
+        shell_exec('pkill stunnel');
     }
 
-    private function fetch(string $url = self::URI)
+    private function fetch(DataSource $source)
     {
-        $fullUrl = 'http://' . self::HOST . "/$url";
-
         if ($this->connector instanceof AsyncHttpConnector) {
-            return wait($this->connector->fetchAsync($fullUrl));
+            return wait($this->connector->fetchAsync($source));
         }
 
-        return $this->connector->fetch($fullUrl);
+        return $this->connector->fetch($source);
+    }
+
+    private static function buildDataSource(string $url = self::URI): HttpDataSource
+    {
+        return new HttpDataSource('http://' . self::HOST . "/$url");
+    }
+
+    private static function buildAsyncDataSource(string $url = self::URI): AsyncHttpDataSource
+    {
+        return new AsyncHttpDataSource('http://' . self::HOST . "/$url");
     }
 
     private function fetchViaSsl(Connector $connector)
     {
-        return $connector->fetch(
-            'https://' . self::SSL_HOST . '/' . self::URI,
-            FixtureFactory::createConnectionContext()
-        );
+        return $connector->fetch(new HttpDataSource('https://' . self::SSL_HOST . '/' . self::URI));
     }
 
     /**
@@ -220,10 +225,10 @@ final class HttpConnectorTest extends \PHPUnit_Framework_TestCase
      */
     private static function waitForHttpServer(\Closure $serverInvoker): void
     {
-        \ScriptFUSION\Retry\retry(
+        retry(
             ImportSpecification::DEFAULT_FETCH_ATTEMPTS,
             $serverInvoker,
-            function (\Exception $exception) {
+            static function (\Exception $exception) {
                 if (!$exception instanceof HttpConnectionException) {
                     return false;
                 }

@@ -13,11 +13,10 @@ use Amp\ByteStream\StreamException;
 use Amp\Promise;
 use Amp\Socket\CryptoException;
 use ScriptFUSION\Porter\Connector\AsyncConnector;
-use ScriptFUSION\Porter\Connector\ConnectorOptions;
-use ScriptFUSION\Porter\Options\EncapsulatedOptions;
+use ScriptFUSION\Porter\Connector\DataSource;
 use function Amp\call;
 
-class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
+class AsyncHttpConnector implements AsyncConnector
 {
     private $options;
 
@@ -31,9 +30,13 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
         $this->options = clone $this->options;
     }
 
-    public function fetchAsync(string $source): Promise
+    public function fetchAsync(DataSource $source): Promise
     {
         return call(function () use ($source): \Generator {
+            if (!$source instanceof AsyncHttpDataSource) {
+                throw new \InvalidArgumentException('Source must be of type: AsyncHttpDataSource.');
+            }
+
             $client = new DefaultClient($this->options->getCookieJar());
             $client->setOptions($this->options->extractArtaxOptions());
 
@@ -62,17 +65,14 @@ class AsyncHttpConnector implements AsyncConnector, ConnectorOptions
         });
     }
 
-    private function createRequest(string $source): Request
+    private function createRequest(AsyncHttpDataSource $source): Request
     {
-        return (new Request($source, $this->options->getMethod()))
-            ->withBody($this->options->getBody())
+        return (new Request($source->getUrl(), $source->getMethod()))
+            ->withBody($source->getBody())
         ;
     }
 
-    /**
-     * @return AsyncHttpOptions
-     */
-    public function getOptions(): EncapsulatedOptions
+    public function getOptions(): AsyncHttpOptions
     {
         return $this->options;
     }

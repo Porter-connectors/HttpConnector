@@ -3,10 +3,8 @@ declare(strict_types=1);
 
 namespace ScriptFUSION\Porter\Net\Http;
 
-use ScriptFUSION\Porter\Connector\ConnectionContext;
 use ScriptFUSION\Porter\Connector\Connector;
-use ScriptFUSION\Porter\Connector\ConnectorOptions;
-use ScriptFUSION\Porter\Options\EncapsulatedOptions;
+use ScriptFUSION\Porter\Connector\DataSource;
 
 /**
  * Fetches data from an HTTP server via the PHP wrapper.
@@ -14,7 +12,7 @@ use ScriptFUSION\Porter\Options\EncapsulatedOptions;
  * Enhanced error reporting is achieved by ignoring HTTP error codes in the wrapper, instead throwing
  * HttpServerException which includes the body of the response in the error message.
  */
-class HttpConnector implements Connector, ConnectorOptions
+class HttpConnector implements Connector
 {
     private $options;
 
@@ -31,7 +29,7 @@ class HttpConnector implements Connector, ConnectorOptions
     /**
      * {@inheritdoc}
      *
-     * @param string $source Source.
+     * @param DataSource $source Source.
      *
      * @return HttpResponse Response.
      *
@@ -39,18 +37,23 @@ class HttpConnector implements Connector, ConnectorOptions
      * @throws HttpConnectionException Failed to connect to source.
      * @throws HttpServerException Server sent an error code.
      */
-    public function fetch(string $source): HttpResponse
+    public function fetch(DataSource $source): HttpResponse
     {
+        if (!$source instanceof HttpDataSource) {
+            throw new \InvalidArgumentException('Source must be of type: HttpDataSource.');
+        }
+
         $streamContext = stream_context_create([
             'http' =>
                 // Instruct PHP to ignore HTTP error codes so Porter can handle them instead.
                 ['ignore_errors' => true]
+                + $source->extractHttpContextOptions()
                 + $this->options->extractHttpContextOptions()
             ,
             'ssl' => $this->options->getSslOptions()->extractSslContextOptions(),
         ]);
 
-        if (false === $body = @file_get_contents($source, false, $streamContext)) {
+        if (false === $body = @file_get_contents($source->getUrl(), false, $streamContext)) {
             $error = error_get_last();
             throw new HttpConnectionException($error['message'], $error['type']);
         }
@@ -68,10 +71,7 @@ class HttpConnector implements Connector, ConnectorOptions
         return $response;
     }
 
-    /**
-     * @return HttpOptions
-     */
-    public function getOptions(): EncapsulatedOptions
+    public function getOptions(): HttpOptions
     {
         return $this->options;
     }

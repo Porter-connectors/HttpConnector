@@ -1,17 +1,17 @@
 <?php
 namespace ScriptFUSIONTest\Unit\Porter\Net\Http;
 
+use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Connector\Recoverable\RecoverableException;
 use ScriptFUSION\Porter\Net\Http\HttpResponse;
 use ScriptFUSION\Porter\Net\Http\HttpServerException;
 
-final class HttpServerExceptionTest extends \PHPUnit_Framework_TestCase
+final class HttpServerExceptionTest extends TestCase
 {
-    /**
-     * @var HttpServerException
-     */
+    /** @var HttpServerException */
     private $exception;
 
+    /** @var HttpResponse */
     private $response;
 
     protected function setUp(): void

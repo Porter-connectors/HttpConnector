@@ -1,10 +1,11 @@
 <?php
 namespace ScriptFUSIONTest\Unit\Porter\Net\Http;
 
+use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Connector\Recoverable\RecoverableException;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
 
-final class HttpConnectionExceptionTest extends \PHPUnit_Framework_TestCase
+final class HttpConnectionExceptionTest extends TestCase
 {
     public function testRecoverable(): void
     {

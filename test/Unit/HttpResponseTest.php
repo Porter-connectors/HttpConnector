@@ -3,12 +3,13 @@ declare(strict_types=1);
 
 namespace ScriptFUSIONTest\Unit;
 
+use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Net\Http\HttpResponse;
 
 /**
  * @see HttpResponse
  */
-final class HttpResponseTest extends \PHPUnit_Framework_TestCase
+final class HttpResponseTest extends TestCase
 {
     /**
      * Tests that headers are case insensitive when calling accessor methods.

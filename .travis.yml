@@ -28,12 +28,13 @@ cache:
     - vendor
 
 install:
-  - alias composer=composer\ -n && composer selfupdate
   - composer validate
-  - composer update --no-progress --no-suggest $DEPENDENCIES
+  - composer --no-interaction update $DEPENDENCIES
 
 script:
-  - composer test -- --coverage-clover=build/logs/clover.xml
+  - composer test -- --coverage-clover=build/logs/clover.xml --coverage-xml=build/coverage/coverage-xml
+    --log-junit=build/coverage/phpunit.junit.xml || exit
+  - vendor/bin/infection --min-msi=69 --threads=$(nproc) --coverage=build/coverage
 
 after_success:
   - composer require php-coveralls/php-coveralls:^2

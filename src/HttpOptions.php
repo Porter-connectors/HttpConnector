@@ -4,326 +4,142 @@ declare(strict_types=1);
 namespace ScriptFUSION\Porter\Net\Http;
 
 use ScriptFUSION\Porter\Net\Ssl\SslOptions;
-use ScriptFUSION\Porter\Options\EncapsulatedOptions;
-use ScriptFUSION\Type\StringType;
 
 /**
  * Encapsulates HTTP stream context options.
+ *
+ * @see http://php.net/manual/en/context.http.php
  */
-final class HttpOptions extends EncapsulatedOptions
+class HttpOptions
 {
-    /**
-     * @var SslOptions
-     */
     private $sslOptions;
 
-    public function __construct()
-    {
-        $this->sslOptions = new SslOptions;
+    /** @var string|null */
+    private $proxy;
 
-        $this->setDefaults([
-            'queryParameters' => [],
-            'header' => [],
-        ]);
-    }
+    /** @var string|null */
+    private $userAgent;
+
+    private $followLocation = true;
+
+    private $sendFullUri = false;
+
+    private $maxRedirects = 20;
+
+    private $protocolVersion = 1.0;
+
+    /** @var float|null */
+    private $timeout;
 
     public function __clone()
     {
         $this->sslOptions = clone $this->sslOptions;
     }
 
-    /**
-     * @return SslOptions
-     */
-    public function getSslOptions()
+    public function getSslOptions(): SslOptions
     {
-        return $this->sslOptions;
+        return $this->sslOptions ?? $this->sslOptions = new SslOptions;
     }
 
-    /**
-     * @return array
-     */
-    public function getQueryParameters()
+    public function getProxy(): ?string
     {
-        return $this->get('queryParameters');
+        return $this->proxy;
     }
 
-    /**
-     * @param array $queryParameters
-     *
-     * @return $this
-     */
-    public function setQueryParameters(array $queryParameters)
+    public function setProxy(?string $proxy): self
     {
-        return $this->set('queryParameters', $queryParameters);
-    }
-
-    /**
-     * @return string
-     */
-    public function getMethod()
-    {
-        return $this->get('method');
-    }
-
-    /**
-     * @param string $method
-     *
-     * @return $this
-     */
-    public function setMethod($method)
-    {
-        return $this->set('method', "$method");
-    }
-
-    /**
-     * @return array
-     */
-    public function getHeaders()
-    {
-        return $this->get('header');
-    }
-
-    /**
-     * @param string $header
-     *
-     * @return $this
-     */
-    public function addHeader($header)
-    {
-        $this->getReference('header')[] = "$header";
+        $this->proxy = $proxy;
 
         return $this;
     }
 
-    public function removeHeaders($name)
+    public function getUserAgent(): ?string
     {
-        foreach ($this->findHeaders($name) as $key => $_) {
-            unset($this->getReference('header')[$key]);
-        }
+        return $this->userAgent;
+    }
+
+    public function setUserAgent(?string $userAgent): self
+    {
+        $this->userAgent = $userAgent;
 
         return $this;
     }
 
-    public function replaceHeaders($name, $header)
+    public function getFollowLocation(): bool
     {
-        return $this->removeHeaders($name)->addHeader($header);
+        return $this->followLocation;
     }
 
-    /**
-     * Find the first header matching the specified name.
-     *
-     * @param string $name Header name.
-     *
-     * @return string|null Header if found, otherwise null.
-     */
-    public function findHeader($name)
+    public function setFollowLocation(bool $followLocation): self
     {
-        if ($headers = $this->findHeaders($name)) {
-            return reset($headers);
-        }
+        $this->followLocation = $followLocation;
+
+        return $this;
     }
 
-    /**
-     * Find all headers matching the specified name.
-     *
-     * @param string $name Header name.
-     *
-     * @return array Headers.
-     */
-    public function findHeaders($name)
+    public function getRequestFullUri(): bool
     {
-        return array_filter($this->getHeaders(), function ($header) use ($name) {
-            return StringType::startsWith($header, "$name:");
-        });
+        return $this->sendFullUri;
     }
 
-    /**
-     * @return string
-     */
-    public function getContent()
+    public function setRequestFullUri(bool $requestFullUri): self
     {
-        return $this->get('content');
+        $this->sendFullUri = $requestFullUri;
+
+        return $this;
     }
 
-    /**
-     * @param string $content
-     *
-     * @return $this
-     */
-    public function setContent($content)
+    public function getMaxRedirects(): int
     {
-        return $this->set('content', "$content");
+        return $this->maxRedirects;
     }
 
-    /**
-     * @return string
-     */
-    public function getProxy()
+    public function setMaxRedirects(int $maxRedirects): self
     {
-        return $this->get('proxy');
+        $this->maxRedirects = $maxRedirects;
+
+        return $this;
     }
 
-    /**
-     * @param string $proxy
-     *
-     * @return $this
-     */
-    public function setProxy($proxy)
+    public function getProtocolVersion(): float
     {
-        return $this->set('proxy', "$proxy");
+        return $this->protocolVersion;
     }
 
-    /**
-     * @return string
-     */
-    public function getUserAgent()
+    public function setProtocolVersion(float $protocolVersion): self
     {
-        return $this->get('user_agent');
+        $this->protocolVersion = $protocolVersion;
+
+        return $this;
     }
 
-    /**
-     * @param string $userAgent
-     *
-     * @return $this
-     */
-    public function setUserAgent($userAgent)
+    public function getTimeout(): ?float
     {
-        return $this->set('user_agent', "$userAgent");
+        return $this->timeout;
     }
 
-    /**
-     * @return bool
-     */
-    public function getFollowLocation()
+    public function setTimeout(?float $timeout): self
     {
-        return $this->get('follow_location');
-    }
+        $this->timeout = $timeout;
 
-    /**
-     * @param bool $followLocation
-     *
-     * @return $this
-     */
-    public function setFollowLocation($followLocation)
-    {
-        return $this->set('follow_location', (bool)$followLocation);
-    }
-
-    /**
-     * @return bool
-     */
-    public function getRequestFullUri()
-    {
-        return $this->get('request_fulluri');
-    }
-
-    /**
-     * @param bool $requestFullUri
-     *
-     * @return $this
-     */
-    public function setRequestFullUri($requestFullUri)
-    {
-        return $this->set('request_fulluri', (bool)$requestFullUri);
-    }
-
-    /**
-     * @return int
-     */
-    public function getMaxRedirects()
-    {
-        return $this->get('max_redirects');
-    }
-
-    /**
-     * @param int $maxRedirects
-     *
-     * @return $this
-     */
-    public function setMaxRedirects($maxRedirects)
-    {
-        return $this->set('max_redirects', $maxRedirects | 0);
-    }
-
-    /**
-     * @return float
-     */
-    public function getProtocolVersion()
-    {
-        return $this->get('protocol_version');
-    }
-
-    /**
-     * @param float $protocolVersion
-     *
-     * @return $this
-     */
-    public function setProtocolVersion($protocolVersion)
-    {
-        return $this->set('protocol_version', (float)$protocolVersion);
-    }
-
-    /**
-     * @return float
-     */
-    public function getTimeout()
-    {
-        return $this->get('timeout');
-    }
-
-    /**
-     * @param float $timeout
-     *
-     * @return $this
-     */
-    public function setTimeout($timeout)
-    {
-        return $this->set('timeout', (float)$timeout);
-    }
-
-    /**
-     * @return bool
-     */
-    public function getIgnoreErrors()
-    {
-        return $this->get('ignore_errors');
-    }
-
-    /**
-     * @param bool $ignoreErrors
-     *
-     * @return $this
-     */
-    public function setIgnoreErrors($ignoreErrors)
-    {
-        return $this->set('ignore_errors', (bool)$ignoreErrors);
+        return $this;
     }
 
     /**
      * Extracts a list of HTTP context options only.
      *
      * @return array HTTP context options.
-     *
-     * @see http://php.net/manual/en/context.http.php
      */
-    public function extractHttpContextOptions()
+    public function extractHttpContextOptions(): array
     {
-        return array_intersect_key(
-            $this->copy(),
-            array_flip([
-                'method',
-                'header',
-                'user_agent',
-                'content',
-                'proxy',
-                'request_fulluri',
-                'follow_location',
-                'max_redirects',
-                'protocol_version',
-                'timeout',
-                'ignore_errors',
-            ])
-        );
+        return array_filter([
+            'user_agent' => $this->userAgent,
+            'proxy' => $this->proxy,
+            'request_fulluri' => $this->sendFullUri,
+            'follow_location' => $this->followLocation,
+            'max_redirects' => $this->maxRedirects,
+            'protocol_version' => $this->protocolVersion,
+            'timeout' => $this->timeout,
+        ]);
     }
 }

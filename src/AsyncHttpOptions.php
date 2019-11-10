@@ -6,28 +6,23 @@ namespace ScriptFUSION\Porter\Net\Http;
 use Amp\Artax\Client;
 use Amp\Artax\Cookie\ArrayCookieJar;
 use Amp\Artax\Cookie\CookieJar;
-use Amp\Artax\RequestBody;
-use ScriptFUSION\Porter\Options\EncapsulatedOptions;
 
 /**
  * Encapsulates async HTTP client options.
  */
-final class AsyncHttpOptions extends EncapsulatedOptions
+final class AsyncHttpOptions
 {
-    /**
-     * @var string
-     */
-    private $method = 'GET';
-
-    /**
-     * @var RequestBody|null
-     */
-    private $body;
-
-    /**
-     * @var CookieJar
-     */
+    /** @var CookieJar */
     private $cookieJar;
+
+    // Transfer timeout in milliseconds until an HTTP request is automatically aborted, use 0 to disable.
+    private $transferTimeout = 15000;
+
+    // Number of redirects to follow, or 0 to disable redirects.
+    private $maxRedirects = 5;
+
+    // Automatically add a "Referer" header on redirect.
+    private $autoReferrer = true;
 
     public function __construct()
     {
@@ -37,69 +32,40 @@ final class AsyncHttpOptions extends EncapsulatedOptions
     public function __clone()
     {
         $this->cookieJar = clone $this->cookieJar;
-        $this->body && $this->body = clone $this->body;
     }
 
-    public function setAutoEncoding(bool $autoEncoding): self
+    public function getTransferTimeout(): int
     {
-        return $this->set(Client::OP_AUTO_ENCODING, $autoEncoding);
+        return $this->transferTimeout;
     }
 
-    public function setTransferTimeout(int $timeout): self
+    public function setTransferTimeout(int $transferTimeout): self
     {
-        return $this->set(Client::OP_TRANSFER_TIMEOUT, $timeout);
-    }
-
-    public function setMaxRedirects(int $maxRedirects): self
-    {
-        return $this->set(Client::OP_MAX_REDIRECTS, $maxRedirects);
-    }
-
-    public function setAutoReferrer(bool $autoReferer): self
-    {
-        return $this->set(Client::OP_AUTO_REFERER, $autoReferer);
-    }
-
-    public function setDiscardBody(bool $discardBody): self
-    {
-        return $this->set(Client::OP_DISCARD_BODY, $discardBody);
-    }
-
-    public function setDefaultHeaders(array $headers): self
-    {
-        return $this->set(Client::OP_DEFAULT_HEADERS, $headers);
-    }
-
-    public function setMaxHeaderBytes(int $maxHeaderBytes): self
-    {
-        return $this->set(Client::OP_MAX_HEADER_BYTES, $maxHeaderBytes);
-    }
-
-    public function setMaxBodyBytes(int $maxBodyBytes): self
-    {
-        return $this->set(Client::OP_MAX_BODY_BYTES, $maxBodyBytes);
-    }
-
-    public function getMethod(): string
-    {
-        return $this->method;
-    }
-
-    public function setMethod(string $method): self
-    {
-        $this->method = $method;
+        $this->transferTimeout = $transferTimeout;
 
         return $this;
     }
 
-    public function getBody(): ?RequestBody
+    public function getMaxRedirects(): int
     {
-        return $this->body;
+        return $this->maxRedirects;
     }
 
-    public function setBody(?RequestBody $body): self
+    public function setMaxRedirects(int $maxRedirects): self
     {
-        $this->body = $body;
+        $this->maxRedirects = $maxRedirects;
+
+        return $this;
+    }
+
+    public function getAutoReferrer(): bool
+    {
+        return $this->autoReferrer;
+    }
+
+    public function setAutoReferrer(bool $autoReferer): self
+    {
+        $this->autoReferrer = $autoReferer;
 
         return $this;
     }
@@ -111,6 +77,10 @@ final class AsyncHttpOptions extends EncapsulatedOptions
 
     public function extractArtaxOptions(): array
     {
-        return $this->copy();
+        return [
+            Client::OP_AUTO_REFERER => $this->autoReferrer,
+            Client::OP_MAX_REDIRECTS => $this->maxRedirects,
+            Client::OP_TRANSFER_TIMEOUT => $this->transferTimeout,
+        ];
     }
 }
