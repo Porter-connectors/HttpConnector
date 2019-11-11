@@ -33,7 +33,7 @@ class HttpOptions
 
     public function __clone()
     {
-        $this->sslOptions = clone $this->sslOptions;
+        $this->sslOptions && $this->sslOptions = clone $this->sslOptions;
     }
 
     public function getSslOptions(): SslOptions
