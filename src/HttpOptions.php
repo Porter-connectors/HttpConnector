@@ -140,6 +140,8 @@ class HttpOptions
             'max_redirects' => $this->maxRedirects,
             'protocol_version' => $this->protocolVersion,
             'timeout' => $this->timeout,
-        ]);
+        ], static function ($v): bool {
+            return $v !== null;
+        });
     }
 }

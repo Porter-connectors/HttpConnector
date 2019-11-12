@@ -71,4 +71,14 @@ final class HttpOptionsTest extends TestCase
     {
         self::assertSame($timeout = 20.0, (new HttpOptions)->setTimeout($timeout)->getTimeout());
     }
+
+    public function testExtractHttpContextOptions(): void
+    {
+        $context = (new HttpOptions)
+            ->setFollowLocation($follow = false)
+            ->extractHttpContextOptions()
+        ;
+
+        self::assertSame($follow, $context['follow_location']);
+    }
 }
