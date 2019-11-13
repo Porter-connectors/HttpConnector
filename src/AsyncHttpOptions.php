@@ -4,17 +4,12 @@ declare(strict_types=1);
 namespace ScriptFUSION\Porter\Net\Http;
 
 use Amp\Artax\Client;
-use Amp\Artax\Cookie\ArrayCookieJar;
-use Amp\Artax\Cookie\CookieJar;
 
 /**
  * Encapsulates async HTTP client options.
  */
 final class AsyncHttpOptions
 {
-    /** @var CookieJar */
-    private $cookieJar;
-
     // Transfer timeout in milliseconds until an HTTP request is automatically aborted, use 0 to disable.
     private $transferTimeout = 15000;
 
@@ -23,16 +18,6 @@ final class AsyncHttpOptions
 
     // Automatically add a "Referer" header on redirect.
     private $autoReferrer = true;
-
-    public function __construct()
-    {
-        $this->cookieJar = new ArrayCookieJar;
-    }
-
-    public function __clone()
-    {
-        $this->cookieJar = clone $this->cookieJar;
-    }
 
     public function getTransferTimeout(): int
     {
@@ -68,11 +53,6 @@ final class AsyncHttpOptions
         $this->autoReferrer = $autoReferer;
 
         return $this;
-    }
-
-    public function getCookieJar(): CookieJar
-    {
-        return $this->cookieJar;
     }
 
     public function extractArtaxOptions(): array

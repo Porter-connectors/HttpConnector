@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace ScriptFUSION\Porter\Net\Http;
 
+use Amp\Artax\Cookie\ArrayCookieJar;
+use Amp\Artax\Cookie\CookieJar;
 use Amp\Artax\DefaultClient;
 use Amp\Artax\DnsException;
 use Amp\Artax\Request;
@@ -20,14 +22,18 @@ class AsyncHttpConnector implements AsyncConnector
 {
     private $options;
 
-    public function __construct(AsyncHttpOptions $options = null)
+    private $cookieJar;
+
+    public function __construct(AsyncHttpOptions $options = null, CookieJar $cookieJar = null)
     {
         $this->options = $options ?: new AsyncHttpOptions;
+        $this->cookieJar = $cookieJar ?: new ArrayCookieJar;
     }
 
     public function __clone()
     {
         $this->options = clone $this->options;
+        $this->cookieJar = clone $this->cookieJar;
     }
 
     public function fetchAsync(DataSource $source): Promise
@@ -37,7 +43,7 @@ class AsyncHttpConnector implements AsyncConnector
                 throw new \InvalidArgumentException('Source must be of type: AsyncHttpDataSource.');
             }
 
-            $client = new DefaultClient($this->options->getCookieJar());
+            $client = new DefaultClient($this->cookieJar);
             $client->setOptions($this->options->extractArtaxOptions());
 
             try {
@@ -75,5 +81,10 @@ class AsyncHttpConnector implements AsyncConnector
     public function getOptions(): AsyncHttpOptions
     {
         return $this->options;
+    }
+
+    public function getCookieJar(): CookieJar
+    {
+        return $this->cookieJar;
     }
 }
