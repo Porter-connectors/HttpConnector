@@ -12,7 +12,7 @@
     "amphp/http-client": "^3",
     "connectors/ssl": "dev-5.0-rc",
     "phptype/string": "^1",
-    "scriptfusion/porter": "dev-data-source as 5"
+    "scriptfusion/porter": "dev-master as 5"
   },
   "require-dev": {
     "infection/infection": ">=0.13.6",
