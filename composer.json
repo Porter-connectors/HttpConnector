@@ -15,6 +15,7 @@
     "scriptfusion/porter": "dev-master as 5"
   },
   "require-dev": {
+    "amphp/phpunit-util": "^1.2",
     "infection/infection": ">=0.13.6",
     "mockery/mockery": "^1",
     "phpunit/phpunit": "^7.1.3",

@@ -15,6 +15,7 @@ use Amp\ByteStream\StreamException;
 use Amp\Promise;
 use Amp\Socket\CryptoException;
 use ScriptFUSION\Porter\Connector\AsyncConnector;
+use ScriptFUSION\Porter\Connector\AsyncDataSource;
 use ScriptFUSION\Porter\Connector\DataSource;
 use function Amp\call;
 
@@ -36,7 +37,7 @@ class AsyncHttpConnector implements AsyncConnector
         $this->cookieJar = clone $this->cookieJar;
     }
 
-    public function fetchAsync(DataSource $source): Promise
+    public function fetchAsync(AsyncDataSource $source): Promise
     {
         return call(function () use ($source): \Generator {
             if (!$source instanceof AsyncHttpDataSource) {
@@ -75,6 +76,7 @@ class AsyncHttpConnector implements AsyncConnector
     {
         return (new Request($source->getUrl(), $source->getMethod()))
             ->withBody($source->getBody())
+            ->withHeaders($source->getHeaders())
         ;
     }
 

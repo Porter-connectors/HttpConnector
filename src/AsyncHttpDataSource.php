@@ -4,10 +4,11 @@ declare(strict_types=1);
 namespace ScriptFUSION\Porter\Net\Http;
 
 use Amp\Artax\RequestBody;
-use ScriptFUSION\Porter\Connector\DataSource;
-use ScriptFUSION\Type\StringType;
+use Amp\Promise;
+use ScriptFUSION\Porter\Connector\AsyncDataSource;
+use function Amp\call;
 
-final class AsyncHttpDataSource implements DataSource
+final class AsyncHttpDataSource implements AsyncDataSource
 {
     private $url;
 
@@ -23,11 +24,13 @@ final class AsyncHttpDataSource implements DataSource
         $this->url = $url;
     }
 
-    public function computeHash(): string
+    public function computeHash(): Promise
     {
-        sort($this->headers);
+        return call(function (): \Generator {
+            $body = $this->body ? yield $this->body->createBodyStream()->read() : null;
 
-        return md5(implode($this->headers) . "$this->method$this->url$this->body", true);
+            return \md5("{$this->flattenHeaders()}$this->method$this->url$body", true);
+        });
     }
 
     public function getUrl(): string
@@ -64,18 +67,16 @@ final class AsyncHttpDataSource implements DataSource
         return $this->headers;
     }
 
-    public function addHeader(string $header): self
+    public function addHeader(string $name, string $value): self
     {
-        $this->headers[] = $header;
+        $this->headers[$name][] = $value;
 
         return $this;
     }
 
     public function removeHeaders(string $name): self
     {
-        foreach ($this->findHeaders($name) as $key => $_) {
-            unset($this->headers[$key]);
-        }
+        unset($this->headers[$name]);
 
         return $this;
     }
@@ -89,9 +90,11 @@ final class AsyncHttpDataSource implements DataSource
      */
     public function findHeader(string $name): ?string
     {
-        if ($headers = $this->findHeaders($name)) {
-            return reset($headers);
+        if (isset($this->headers[$name])) {
+            return reset($this->headers[$name]);
         }
+
+        return null;
     }
 
     /**
@@ -103,17 +106,26 @@ final class AsyncHttpDataSource implements DataSource
      */
     public function findHeaders(string $name): array
     {
-        return array_filter($this->getHeaders(), static function ($header) use ($name): bool {
-            return StringType::startsWith($header, "$name:");
-        });
+        return $this->headers[$name] ?? [];
     }
 
-    public function extractHttpContextOptions(): array
+    /**
+     * Flattens headers in a deterministic order using sorting.
+     *
+     * @return string Flattened headers.
+     */
+    private function flattenHeaders(): string
     {
-        return [
-            'method' => $this->method,
-            'header' => $this->headers,
-            'content' => $this->body,
-        ];
+        $flattened = '';
+
+        ksort($this->headers);
+        foreach ($this->headers as $name => $values) {
+            sort($values);
+            foreach ($values as $value) {
+                $flattened .= $name . $value;
+            }
+        }
+
+        return $flattened;
     }
 }

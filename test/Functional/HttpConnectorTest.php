@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 namespace ScriptFUSIONTest\Functional\Porter\Net\Http;
 
+use Amp\Artax\StringBody;
 use PHPUnit\Framework\TestCase;
+use ScriptFUSION\Porter\Connector\AsyncDataSource;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Connector\DataSource;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
@@ -40,14 +42,20 @@ final class HttpConnectorTest extends TestCase
         $server = $this->startServer();
 
         try {
-            $response = $this->fetch(self::buildDataSource()->addHeader($header = 'Foo: Bar'));
+            $response = $this->fetch(
+                self::buildDataSource()
+                    ->setMethod('POST')
+                    ->addHeader($header = 'Foo: Bar')
+                    ->setBody($body = 'Baz')
+            );
         } finally {
             $this->stopServer($server);
         }
 
         self::assertSame(200, $response->getStatusCode());
-        self::assertRegExp('[\AGET \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
+        self::assertRegExp('[\APOST \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
         self::assertRegExp("[^$header$]m", $response->getBody());
+        self::assertStringEndsWith("\n\n$body", $response->getBody());
     }
 
     /**
@@ -82,7 +90,12 @@ final class HttpConnectorTest extends TestCase
         $this->connector = new AsyncHttpConnector;
 
         try {
-            $response = $this->fetch(self::buildAsyncDataSource());
+            $response = $this->fetchAsync(
+                self::buildAsyncDataSource()
+                    ->setMethod('POST')
+                    ->addHeader($headerName = 'Foo', $headerValue = 'Bar')
+                    ->setBody(new StringBody($body = 'Baz'))
+            );
         } finally {
             $this->stopServer($server);
         }
@@ -92,7 +105,9 @@ final class HttpConnectorTest extends TestCase
         self::assertSame('OK', $response->getReasonPhrase());
         self::assertSame('1.1', $response->getProtocolVersion());
         self::assertTrue($response->hasHeader('x-powered-by'));
-        self::assertRegExp('[\AGET \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
+        self::assertRegExp('[\APOST \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
+        self::assertRegExp("[^$headerName: $headerValue$]m", $response->getBody());
+        self::assertStringEndsWith("\n\n$body", $response->getBody());
     }
 
     public function testConnectionTimeout(): void
@@ -196,11 +211,12 @@ final class HttpConnectorTest extends TestCase
 
     private function fetch(DataSource $source)
     {
-        if ($this->connector instanceof AsyncHttpConnector) {
-            return wait($this->connector->fetchAsync($source));
-        }
-
         return $this->connector->fetch($source);
+    }
+
+    private function fetchAsync(AsyncDataSource $source)
+    {
+        return wait($this->connector->fetchAsync($source));
     }
 
     private static function buildDataSource(string $url = self::URI): HttpDataSource
