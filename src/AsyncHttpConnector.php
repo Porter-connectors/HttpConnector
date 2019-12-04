@@ -16,7 +16,6 @@ use Amp\Promise;
 use Amp\Socket\CryptoException;
 use ScriptFUSION\Porter\Connector\AsyncConnector;
 use ScriptFUSION\Porter\Connector\AsyncDataSource;
-use ScriptFUSION\Porter\Connector\DataSource;
 use function Amp\call;
 
 class AsyncHttpConnector implements AsyncConnector

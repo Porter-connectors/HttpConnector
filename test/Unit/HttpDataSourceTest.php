@@ -21,6 +21,40 @@ final class HttpDataSourceTest extends TestCase
         $this->source = new HttpDataSource('foo');
     }
 
+    /**
+     * Tests that when properties change, the hash changes and when they do not, the hash stays the same.
+     */
+    public function testComputeHash(): void
+    {
+        self::assertNotEmpty($hash = $this->source->computeHash());
+        self::assertSame($hash, $this->source->computeHash());
+
+        self::assertNotSame($hash, $hash = $this->source->setMethod('Alfa')->computeHash());
+        self::assertNotSame($hash, $hash = $this->source->setBody('Bravo')->computeHash());
+        self::assertNotSame($hash, $hash = $this->source->addHeader('Charlie: Delta')->computeHash());
+
+        self::assertSame($hash, $this->source->computeHash());
+    }
+
+    /**
+     * Tests that when headers are hashed with the same names in different orders, they return the same hash.
+     */
+    public function testHashHeaderNames(): void
+    {
+        $initialHash = $this->source->computeHash();
+
+        $this->source->addHeader($h1 = 'Alfa: Bravo');
+        $this->source->addHeader($h2 = 'Charlie: Delta');
+
+        self::assertNotSame($initialHash, $populatedHash = $this->source->computeHash());
+        self::assertSame($initialHash, $this->source->removeHeaders('Alfa')->removeHeaders('Charlie')->computeHash());
+
+        $this->source->addHeader($h2);
+        $this->source->addHeader($h1);
+
+        self::assertSame($populatedHash, $this->source->computeHash());
+    }
+
     public function testMethod(): void
     {
         self::assertSame('foo', $this->source->setMethod('foo')->getMethod());

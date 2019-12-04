@@ -7,7 +7,7 @@ use ScriptFUSION\Porter\Net\Http\HttpConnector;
 use ScriptFUSION\Porter\Net\Http\HttpOptions;
 
 /**
- * HttpConnector
+ * @see HttpConnector
  */
 final class HttpConnectorTest extends TestCase
 {
