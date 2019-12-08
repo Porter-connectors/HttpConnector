@@ -10,9 +10,9 @@
   "license": "LGPL-3.0",
   "require": {
     "amphp/http-client": "^3",
-    "connectors/ssl": "dev-5.0-rc",
+    "connectors/ssl": "^2",
     "phptype/string": "^1",
-    "scriptfusion/porter": "dev-master as 5"
+    "scriptfusion/porter": "^5"
   },
   "require-dev": {
     "amphp/phpunit-util": "^1.2",
