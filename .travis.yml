@@ -11,10 +11,10 @@ addons:
 language: php
 
 php:
-  - 5.6
-  - 7.0
   - 7.1
   - 7.2
+  - 7.3
+  - 7.4
 
 env:
   matrix:
@@ -29,12 +29,13 @@ cache:
     - vendor
 
 install:
-  - alias composer=composer\ -n && composer selfupdate
   - composer validate
-  - composer update --no-progress --no-suggest $DEPENDENCIES
+  - composer --no-interaction update --no-progress --no-suggest $DEPENDENCIES
 
 script:
-  - composer test -- --coverage-clover=build/logs/clover.xml
+  - composer test -- --coverage-clover=build/logs/clover.xml --coverage-xml=build/coverage/coverage-xml
+    --log-junit=build/coverage/phpunit.junit.xml || exit
+  - travis_retry timeout -k 60s 30s vendor/bin/infection --min-msi=69 --threads=$(nproc) --coverage=build/coverage
 
 after_success:
   - composer require php-coveralls/php-coveralls:^2

@@ -1,9 +1,10 @@
 <?php
+declare(strict_types=1);
+
 namespace ScriptFUSION\Porter\Net\Http;
 
-use ScriptFUSION\Porter\Connector\ConnectionContext;
 use ScriptFUSION\Porter\Connector\Connector;
-use ScriptFUSION\Porter\Connector\ConnectorOptions;
+use ScriptFUSION\Porter\Connector\DataSource;
 
 /**
  * Fetches data from an HTTP server via the PHP wrapper.
@@ -11,9 +12,8 @@ use ScriptFUSION\Porter\Connector\ConnectorOptions;
  * Enhanced error reporting is achieved by ignoring HTTP error codes in the wrapper, instead throwing
  * HttpServerException which includes the body of the response in the error message.
  */
-class HttpConnector implements Connector, ConnectorOptions
+class HttpConnector implements Connector
 {
-    /** @var HttpOptions */
     private $options;
 
     public function __construct(HttpOptions $options = null)
@@ -29,8 +29,7 @@ class HttpConnector implements Connector, ConnectorOptions
     /**
      * {@inheritdoc}
      *
-     * @param ConnectionContext $context Runtime connection settings and methods.
-     * @param string $source Source.
+     * @param DataSource $source Source.
      *
      * @return HttpResponse Response.
      *
@@ -38,42 +37,41 @@ class HttpConnector implements Connector, ConnectorOptions
      * @throws HttpConnectionException Failed to connect to source.
      * @throws HttpServerException Server sent an error code.
      */
-    public function fetch(ConnectionContext $context, $source)
+    public function fetch(DataSource $source): HttpResponse
     {
-        $url = QueryBuilder::mergeQuery($source, $this->options->getQueryParameters());
+        if (!$source instanceof HttpDataSource) {
+            throw new \InvalidArgumentException('Source must be of type: HttpDataSource.');
+        }
 
         $streamContext = stream_context_create([
             'http' =>
                 // Instruct PHP to ignore HTTP error codes so Porter can handle them instead.
                 ['ignore_errors' => true]
+                + $source->extractHttpContextOptions()
                 + $this->options->extractHttpContextOptions()
             ,
             'ssl' => $this->options->getSslOptions()->extractSslContextOptions(),
         ]);
 
-        return $context->retry(static function () use ($url, $streamContext) {
-            if (false === $body = @file_get_contents($url, false, $streamContext)) {
-                $error = error_get_last();
-                throw new HttpConnectionException($error['message'], $error['type']);
-            }
+        if (false === $body = @file_get_contents($source->getUrl(), false, $streamContext)) {
+            $error = error_get_last();
+            throw new HttpConnectionException($error['message'], $error['type']);
+        }
 
-            $response = new HttpResponse($http_response_header, $body);
+        $response = HttpResponse::fromPhpWrapper($http_response_header, $body);
 
-            if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 400) {
-                throw new HttpServerException(
-                    "HTTP server responded with error: \"{$response->getReasonPhrase()}\".\n\n$response",
-                    $response
-                );
-            }
+        $code = $response->getStatusCode();
+        if ($code < 200 || $code >= 400) {
+            throw new HttpServerException(
+                "HTTP server responded with error: $code \"{$response->getReasonPhrase()}\".\n\n$response",
+                $response
+            );
+        }
 
-            return $response;
-        });
+        return $response;
     }
 
-    /**
-     * @return HttpOptions
-     */
-    public function getOptions()
+    public function getOptions(): HttpOptions
     {
         return $this->options;
     }
