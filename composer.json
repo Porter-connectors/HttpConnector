@@ -9,7 +9,8 @@
   ],
   "license": "LGPL-3.0",
   "require": {
-    "amphp/http-client": "^3",
+    "amphp/http-client": "^4",
+    "amphp/http-client-cookies": "^1",
     "connectors/ssl": "^2",
     "phptype/string": "^1",
     "scriptfusion/porter": "^5"
@@ -35,9 +36,6 @@
     "test": "phpunit -c test"
   },
   "config": {
-    "platform": {
-      "php": "7.1.99"
-    },
     "sort-packages": true
   }
 }

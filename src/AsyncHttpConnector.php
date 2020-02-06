@@ -3,17 +3,15 @@ declare(strict_types=1);
 
 namespace ScriptFUSION\Porter\Net\Http;
 
-use Amp\Artax\Cookie\ArrayCookieJar;
-use Amp\Artax\Cookie\CookieJar;
-use Amp\Artax\DefaultClient;
-use Amp\Artax\DnsException;
-use Amp\Artax\Request;
-use Amp\Artax\Response;
-use Amp\Artax\SocketException;
-use Amp\Artax\TimeoutException;
 use Amp\ByteStream\StreamException;
+use Amp\Dns\DnsException;
+use Amp\Http\Client\Cookie\CookieJar;
+use Amp\Http\Client\Cookie\InMemoryCookieJar;
+use Amp\Http\Client\Request;
+use Amp\Http\Client\Response;
+use Amp\Http\Client\SocketException;
+use Amp\Http\Client\TimeoutException;
 use Amp\Promise;
-use Amp\Socket\CryptoException;
 use ScriptFUSION\Porter\Connector\AsyncConnector;
 use ScriptFUSION\Porter\Connector\AsyncDataSource;
 use function Amp\call;
@@ -27,7 +25,7 @@ class AsyncHttpConnector implements AsyncConnector
     public function __construct(AsyncHttpOptions $options = null, CookieJar $cookieJar = null)
     {
         $this->options = $options ?: new AsyncHttpOptions;
-        $this->cookieJar = $cookieJar ?: new ArrayCookieJar;
+        $this->cookieJar = $cookieJar ?: new InMemoryCookieJar;
     }
 
     public function __clone()
@@ -50,13 +48,13 @@ class AsyncHttpConnector implements AsyncConnector
                 /** @var Response $response */
                 $response = yield $client->request($this->createRequest($source));
                 $body = yield $response->getBody();
-                // Retry HTTP timeouts, socket timeouts, DNS resolution, crypto negotiation and connection reset errors.
-            } catch (TimeoutException|SocketException|DnsException|CryptoException|StreamException $exception) {
+                // Retry HTTP timeouts, socket timeouts, DNS resolution and connection reset errors.
+            } catch (TimeoutException|SocketException|DnsException|StreamException $exception) {
                 // Convert exception to recoverable exception.
                 throw new HttpConnectionException($exception->getMessage(), $exception->getCode(), $exception);
             }
 
-            $response = HttpResponse::fromArtaxResponse($response, $body);
+            $response = HttpResponse::fromAmpResponse($response, $body);
 
             $code = $response->getStatusCode();
             if ($code < 200 || $code >= 400) {
@@ -73,10 +71,10 @@ class AsyncHttpConnector implements AsyncConnector
 
     private function createRequest(AsyncHttpDataSource $source): Request
     {
-        return (new Request($source->getUrl(), $source->getMethod()))
-            ->withBody($source->getBody())
-            ->withHeaders($source->getHeaders())
-        ;
+        $request = new Request($source->getUrl(), $source->getMethod(), $source->getBody());
+        $request->setHeaders($source->getHeaders());
+
+        return $request;
     }
 
     public function getOptions(): AsyncHttpOptions
