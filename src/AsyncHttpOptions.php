@@ -19,6 +19,9 @@ final class AsyncHttpOptions
     // Automatically add a "Referer" header on redirect.
     private $autoReferrer = true;
 
+    // Maximum body length in bytes. Default 10MiB.
+    private $maxBodyLength = 0x100000 * 10;
+
     public function getTransferTimeout(): int
     {
         return $this->transferTimeout;
@@ -55,12 +58,25 @@ final class AsyncHttpOptions
         return $this;
     }
 
+    public function getMaxBodyLength(): int
+    {
+        return $this->maxBodyLength;
+    }
+
+    public function setMaxBodyLength($maxBodyLength): self
+    {
+        $this->maxBodyLength = $maxBodyLength;
+
+        return $this;
+    }
+
     public function extractArtaxOptions(): array
     {
         return [
             Client::OP_AUTO_REFERER => $this->autoReferrer,
             Client::OP_MAX_REDIRECTS => $this->maxRedirects,
             Client::OP_TRANSFER_TIMEOUT => $this->transferTimeout,
+            Client::OP_MAX_BODY_BYTES => $this->maxBodyLength,
         ];
     }
 }

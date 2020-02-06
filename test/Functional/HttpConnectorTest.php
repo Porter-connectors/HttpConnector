@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace ScriptFUSIONTest\Functional\Porter\Net\Http;
 
+use Amp\Artax\HttpException;
+use Amp\Artax\ParseException;
 use Amp\Artax\StringBody;
 use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Connector\AsyncDataSource;
@@ -10,6 +12,7 @@ use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Connector\DataSource;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpDataSource;
+use ScriptFUSION\Porter\Net\Http\AsyncHttpOptions;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
 use ScriptFUSION\Porter\Net\Http\HttpConnector;
 use ScriptFUSION\Porter\Net\Http\HttpDataSource;
@@ -151,6 +154,43 @@ final class HttpConnectorTest extends TestCase
         self::assertSame(200, $response->getStatusCode());
         self::assertInstanceOf(HttpResponse::class, $prev = $response->getPrevious());
         self::assertSame(302, $prev->getStatusCode());
+    }
+
+    /**
+     * Tests that when the body length exceeds the default limit, an HTTP exception is thrown.
+     */
+    public function testDefaultBodyLengthTooLong(): void
+    {
+        $server = $this->startServer();
+
+        $this->connector = new AsyncHttpConnector();
+
+        $this->expectException(HttpException::class);
+
+        try {
+            $this->fetchAsync(self::buildAsyncDataSource('big.php'));
+        } finally {
+            $this->stopServer($server);
+        }
+    }
+
+    /**
+     * Tests that when the body length exceeds a small custom limit, an HTTP exception is thrown.
+     */
+    public function testCustomBodyLengthTooLong(): void
+    {
+        $server = $this->startServer();
+
+        $this->connector = new AsyncHttpConnector((new AsyncHttpOptions)->setMaxBodyLength(1));
+
+        // N.B. Actual type is Amp\Artax\ParseException.
+        $this->expectException(HttpException::class);
+
+        try {
+            $this->fetchAsync(self::buildAsyncDataSource());
+        } finally {
+            $this->stopServer($server);
+        }
     }
 
     /**
