@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace ScriptFUSION\Porter\Net\Http;
 
-use Amp\Artax\RequestBody;
+use Amp\Http\Client\RequestBody;
 use Amp\Promise;
 use ScriptFUSION\Porter\Connector\AsyncDataSource;
 use function Amp\call;

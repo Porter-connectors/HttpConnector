@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace ScriptFUSIONTest\Unit;
 
-use Amp\Artax\StringBody;
+use Amp\Http\Client\Body\StringBody;
 use Amp\PHPUnit\AsyncTestCase;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpDataSource;
 
