@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 namespace ScriptFUSIONTest\Functional\Porter\Net\Http;
 
-use Amp\Artax\StringBody;
+use Amp\Http\Client\Body\StringBody;
+use Amp\Http\Cookie\CookieAttributes;
+use Amp\Http\Cookie\ResponseCookie;
 use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Connector\AsyncDataSource;
 use ScriptFUSION\Porter\Connector\Connector;
@@ -89,6 +91,15 @@ final class HttpConnectorTest extends TestCase
 
         $this->connector = new AsyncHttpConnector;
 
+        // Test cookies are sent.
+        $this->connector->getCookieJar()->store(
+            new ResponseCookie(
+                $cookieName = uniqid(),
+                $cookievalue = 'Alfa',
+                CookieAttributes::default()->withDomain(explode(':', self::HOST)[0])
+            )
+        );
+
         try {
             $response = $this->fetchAsync(
                 self::buildAsyncDataSource()
@@ -106,8 +117,9 @@ final class HttpConnectorTest extends TestCase
         self::assertSame('1.1', $response->getProtocolVersion());
         self::assertTrue($response->hasHeader('x-powered-by'));
         self::assertRegExp('[\APOST \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
-        self::assertRegExp("[^$headerName: $headerValue$]m", $response->getBody());
-        self::assertStringEndsWith("\n\n$body", $response->getBody());
+        self::assertRegExp("[^$headerName: $headerValue$]m", $response->getBody(), 'Headers sent.');
+        self::assertRegExp("[^Cookie: \Q$cookieName=$cookievalue\E$]m", $response->getBody(), 'Cookies sent.');
+        self::assertStringEndsWith("\n\n$body", $response->getBody(), 'Body sent.');
     }
 
     public function testConnectionTimeout(): void
@@ -126,8 +138,8 @@ final class HttpConnectorTest extends TestCase
         try {
             $this->fetch(self::buildDataSource('404.php'));
         } catch (HttpServerException $exception) {
-            $this->assertStringEndsWith('foo', $exception->getMessage());
-            $this->assertSame('foo', $exception->getResponse()->getBody());
+            self::assertStringEndsWith('foo', $exception->getMessage());
+            self::assertSame('foo', $exception->getResponse()->getBody());
 
             throw $exception;
         } finally {

@@ -11,7 +11,6 @@ addons:
 language: php
 
 php:
-  - 7.1
   - 7.2
   - 7.3
   - 7.4
@@ -33,9 +32,7 @@ install:
   - composer --no-interaction update --no-progress --no-suggest $DEPENDENCIES
 
 script:
-  - composer test -- --coverage-clover=build/logs/clover.xml --coverage-xml=build/coverage/coverage-xml
-    --log-junit=build/coverage/phpunit.junit.xml || exit
-  - travis_retry timeout -k 60s 30s vendor/bin/infection --min-msi=69 --threads=$(nproc) --coverage=build/coverage
+  - composer test -- --coverage-clover=build/logs/clover.xml
 
 after_success:
   - composer require php-coveralls/php-coveralls:^2
