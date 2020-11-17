@@ -27,20 +27,16 @@ class AsyncHttpConnector implements AsyncConnector
 
     private $cookieJar;
 
-    private $pool;
-
     public function __construct(AsyncHttpOptions $options = null, CookieJar $cookieJar = null)
     {
         $this->options = $options ?: new AsyncHttpOptions;
         $this->cookieJar = $cookieJar ?: new InMemoryCookieJar;
-        $this->pool = new UnlimitedConnectionPool();
     }
 
     public function __clone()
     {
         $this->options = clone $this->options;
         $this->cookieJar = clone $this->cookieJar;
-        // Sharing the pool is intended and should be harmless.
     }
 
     public function fetchAsync(AsyncDataSource $source): Promise
@@ -80,7 +76,6 @@ class AsyncHttpConnector implements AsyncConnector
     private function createClient(): HttpClient
     {
         return (new HttpClientBuilder())
-            ->usingPool($this->pool)
             ->interceptNetwork(new CookieInterceptor($this->cookieJar))
             ->followRedirects($this->options->getMaxRedirects())
             // We have our own retry implementation.
