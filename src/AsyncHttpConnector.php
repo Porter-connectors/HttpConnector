@@ -95,6 +95,7 @@ class AsyncHttpConnector implements AsyncConnector
         $request->setBody($source->getBody());
         $request->setHeaders($source->getHeaders());
         $request->setTransferTimeout($this->options->getTransferTimeout());
+        $request->setInactivityTimeout($request->getTransferTimeout());
         $request->setBodySizeLimit($this->options->getMaxBodyLength());
 
         return $request;
