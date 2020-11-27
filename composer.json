@@ -10,7 +10,7 @@
   "license": "LGPL-3.0",
   "require": {
     "php": "^7.2",
-    "amphp/http-client": "^4.1",
+    "amphp/http-client": "^4.3",
     "amphp/http-client-cookies": "^1",
     "connectors/ssl": "^2",
     "phptype/string": "^1",
