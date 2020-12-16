@@ -36,7 +36,7 @@ final class HttpConnectorTest extends TestCase
     /** @var HttpConnector|AsyncHttpConnector */
     private $connector;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->connector = new HttpConnector;
     }
@@ -57,8 +57,11 @@ final class HttpConnectorTest extends TestCase
         }
 
         self::assertSame(200, $response->getStatusCode());
-        self::assertRegExp('[\APOST \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
-        self::assertRegExp("[^$header$]m", $response->getBody());
+        self::assertMatchesRegularExpression(
+            '[\APOST \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m',
+            $response->getBody()
+        );
+        self::assertMatchesRegularExpression("[^$header$]m", $response->getBody());
         self::assertStringEndsWith("\n\n$body", $response->getBody());
     }
 
@@ -78,7 +81,7 @@ final class HttpConnectorTest extends TestCase
         }
 
         self::assertSame(200, $response->getStatusCode());
-        self::assertRegExp(
+        self::assertMatchesRegularExpression(
             '[\AGET \Q' . self::SSL_HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m',
             $response->getBody()
         );
@@ -118,9 +121,20 @@ final class HttpConnectorTest extends TestCase
         self::assertSame('OK', $response->getReasonPhrase());
         self::assertSame('1.1', $response->getProtocolVersion());
         self::assertTrue($response->hasHeader('x-powered-by'));
-        self::assertRegExp('[\APOST \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m', $response->getBody());
-        self::assertRegExp("[^$headerName: $headerValue$]m", $response->getBody(), 'Headers sent.');
-        self::assertRegExp("[^Cookie: \Q$cookieName=$cookievalue\E$]m", $response->getBody(), 'Cookies sent.');
+        self::assertMatchesRegularExpression(
+            '[\APOST \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m',
+            $response->getBody()
+        );
+        self::assertMatchesRegularExpression(
+            "[^$headerName: $headerValue$]m",
+            $response->getBody(),
+            'Headers sent.'
+        );
+        self::assertMatchesRegularExpression(
+            "[^Cookie: \Q$cookieName=$cookievalue\E$]m",
+            $response->getBody(),
+            'Cookies sent.'
+        );
         self::assertStringEndsWith("\n\n$body", $response->getBody(), 'Body sent.');
     }
 
@@ -226,8 +240,8 @@ final class HttpConnectorTest extends TestCase
 
     private function startSsl(): string
     {
-        $accept = str_replace($filter = ['[', ']'], null, self::SSL_HOST);
-        $connect = str_replace($filter, null, self::HOST);
+        $accept = str_replace($filter = ['[', ']'], '', self::SSL_HOST);
+        $connect = str_replace($filter, '', self::HOST);
         $certificate = tempnam(sys_get_temp_dir(), '');
 
         // Create SSL tunnel process.

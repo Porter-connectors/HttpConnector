@@ -1,8 +1,6 @@
 notifications:
   email: false
 
-sudo: false
-
 addons:
   apt:
     packages:
@@ -11,9 +9,9 @@ addons:
 language: php
 
 php:
-  - 7.2
   - 7.3
   - 7.4
+  - 8.0
 
 env:
   matrix:
@@ -32,7 +30,7 @@ install:
   - composer --no-interaction update --no-progress --no-suggest $DEPENDENCIES
 
 script:
-  - composer test -- --coverage-clover=build/logs/clover.xml
+  - XDEBUG_MODE=coverage composer test -- --coverage-clover=build/logs/clover.xml
 
 after_success:
   - composer require php-coveralls/php-coveralls:^2
