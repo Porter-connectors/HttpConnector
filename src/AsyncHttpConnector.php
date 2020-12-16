@@ -6,6 +6,7 @@ namespace ScriptFUSION\Porter\Net\Http;
 use Amp\ByteStream\StreamException;
 use Amp\Dns\DnsException;
 use Amp\Http\Client\Connection\UnlimitedConnectionPool;
+use Amp\Http\Client\Connection\UnprocessedRequestException;
 use Amp\Http\Client\Cookie\CookieInterceptor;
 use Amp\Http\Client\Cookie\CookieJar;
 use Amp\Http\Client\Cookie\InMemoryCookieJar;
@@ -57,7 +58,8 @@ class AsyncHttpConnector implements AsyncConnector
                 $response = yield $client->request($this->createRequest($source));
                 $body = yield $response->getBody()->buffer();
                 // Retry HTTP timeouts, socket timeouts, DNS resolution, TLS negotiation and connection reset errors.
-            } catch (TimeoutException|SocketException|DnsException|TlsException|StreamException $exception) {
+            } catch (TimeoutException|SocketException|DnsException|TlsException|StreamException
+                |UnprocessedRequestException $exception) {
                 // Convert exception to recoverable exception.
                 throw new HttpConnectionException($exception->getMessage(), $exception->getCode(), $exception);
             }
