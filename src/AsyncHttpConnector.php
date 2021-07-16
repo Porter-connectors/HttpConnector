@@ -12,6 +12,10 @@ use Amp\Http\Client\Cookie\CookieJar;
 use Amp\Http\Client\Cookie\InMemoryCookieJar;
 use Amp\Http\Client\HttpClient;
 use Amp\Http\Client\HttpClientBuilder;
+use Amp\Http\Client\HttpException;
+use Amp\Http\Client\Interceptor\TooManyRedirectsException;
+use Amp\Http\Client\InvalidRequestException;
+use Amp\Http\Client\ParseException;
 use Amp\Http\Client\Request;
 use Amp\Http\Client\Response;
 use Amp\Http\Client\SocketException;
@@ -57,9 +61,21 @@ class AsyncHttpConnector implements AsyncConnector
                 /** @var Response $response */
                 $response = yield $client->request($this->createRequest($source));
                 $body = yield $response->getBody()->buffer();
-                // Retry HTTP timeouts, socket timeouts, DNS resolution, TLS negotiation and connection reset errors.
-            } catch (TimeoutException|SocketException|DnsException|TlsException|StreamException
-                |UnprocessedRequestException $exception) {
+
+                /*
+                 * Retry intermittent DNS failures, low-level stream errors including TLS negotiation failures
+                 * and all manner of HTTP exceptions including, but not limited to, socket timeouts and connection
+                 * resets.
+                 */
+            } catch (DnsException|StreamException|HttpException $exception) {
+                // Exclude list of permanent exceptions.
+                if ($exception instanceof TooManyRedirectsException
+                    || $exception instanceof InvalidRequestException
+                    || $exception instanceof ParseException
+                ) {
+                    throw $exception;
+                }
+
                 // Convert exception to recoverable exception.
                 throw new HttpConnectionException($exception->getMessage(), $exception->getCode(), $exception);
             }
