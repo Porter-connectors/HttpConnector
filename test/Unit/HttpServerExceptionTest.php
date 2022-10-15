@@ -1,4 +1,5 @@
-<?php
+<?php declare(strict_types=1);
+
 namespace ScriptFUSIONTest\Unit\Porter\Net\Http;
 
 use PHPUnit\Framework\TestCase;

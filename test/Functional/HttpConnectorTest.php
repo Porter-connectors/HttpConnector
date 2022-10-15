@@ -23,7 +23,6 @@ use ScriptFUSION\Porter\Net\Http\HttpServerException;
 use ScriptFUSION\Porter\Specification\ImportSpecification;
 use ScriptFUSION\Retry\ExceptionHandler\ExponentialBackoffExceptionHandler;
 use Symfony\Component\Process\Process;
-use function Amp\Promise\wait;
 use function ScriptFUSION\Retry\retry;
 
 final class HttpConnectorTest extends TestCase
@@ -116,7 +115,6 @@ final class HttpConnectorTest extends TestCase
             $this->stopServer($server);
         }
 
-        self::assertInstanceOf(HttpResponse::class, $response);
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('OK', $response->getReasonPhrase());
         self::assertSame('1.1', $response->getProtocolVersion());
@@ -218,9 +216,6 @@ final class HttpConnectorTest extends TestCase
         }
     }
 
-    /**
-     * @return Process Server.
-     */
     private function startServer(): Process
     {
         $server = new Process(['php', '-S', self::HOST, '-t', self::DIR]);
@@ -245,7 +240,7 @@ final class HttpConnectorTest extends TestCase
         $certificate = tempnam(sys_get_temp_dir(), '');
 
         // Create SSL tunnel process.
-        (new Process(
+        Process::fromShellCommandline(
             // Generate self-signed SSL certificate in PEM format.
             "openssl req -new -x509 -nodes -subj /CN=127.0.0.1 -keyout '$certificate' -out '$certificate'
 
@@ -260,7 +255,7 @@ final class HttpConnectorTest extends TestCase
                 accept=$accept
                 connect=$connect
 ."
-        ))->start();
+        )->start();
 
         self::waitForHttpServer(function () use ($certificate): void {
             $this->fetchViaSsl(self::createSslConnector($certificate));
@@ -274,14 +269,14 @@ final class HttpConnectorTest extends TestCase
         shell_exec('pkill stunnel');
     }
 
-    private function fetch(DataSource $source)
+    private function fetch(DataSource $source): HttpResponse
     {
         return $this->connector->fetch($source);
     }
 
-    private function fetchAsync(AsyncDataSource $source)
+    private function fetchAsync(AsyncDataSource $source): HttpResponse
     {
-        return wait($this->connector->fetchAsync($source));
+        return $this->connector->fetchAsync($source);
     }
 
     private static function buildDataSource(string $url = self::URI): HttpDataSource
@@ -294,7 +289,7 @@ final class HttpConnectorTest extends TestCase
         return new AsyncHttpDataSource('http://' . self::HOST . "/$url");
     }
 
-    private function fetchViaSsl(Connector $connector)
+    private function fetchViaSsl(Connector $connector): HttpResponse
     {
         return $connector->fetch(new HttpDataSource('https://' . self::SSL_HOST . '/' . self::URI));
     }

@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace ScriptFUSIONTest\Unit;
 
-use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
 use PHPUnit\Framework\TestCase;
+use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
 
 /**
  * @see AsyncHttpConnector
@@ -23,7 +23,6 @@ final class AsyncHttpConnectorTest extends TestCase
         self::assertNotSame($connector->getCookieJar(), $newConnector->getCookieJar(), 'Cookie jar cloned.');
 
         $poolProperty = new \ReflectionProperty(AsyncHttpConnector::class, 'pool');
-        $poolProperty->setAccessible(true);
 
         self::assertSame(
             $poolProperty->getValue($connector),

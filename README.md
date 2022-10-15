@@ -14,8 +14,8 @@ Provides an HTTP connector for [Porter][Porter] that fetches data from an HTTP s
   [Version image]: https://poser.pugx.org/connectors/http/version "Latest version"
   [Downloads]: https://packagist.org/packages/connectors/http
   [Downloads image]: https://poser.pugx.org/connectors/http/downloads "Total downloads"
-  [Build]: https://travis-ci.org/Porter-connectors/HttpConnector
-  [Build image]: https://travis-ci.org/Porter-connectors/HttpConnector.svg?branch=master "Build status"
+  [Build]: https://github.com/Porter-connectors/HttpConnector/actions/workflows/Tests.yaml
+  [Build image]: https://github.com/Porter-connectors/HttpConnector/actions/workflows/Tests.yaml/badge.svg "Build status"
   [Coverage]: https://coveralls.io/github/Porter-connectors/HttpConnector
   [Coverage image]: https://coveralls.io/repos/Porter-connectors/HttpConnector/badge.svg "Test coverage"
   [Style]: https://styleci.io/repos/94378769

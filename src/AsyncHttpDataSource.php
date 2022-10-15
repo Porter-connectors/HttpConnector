@@ -4,9 +4,7 @@ declare(strict_types=1);
 namespace ScriptFUSION\Porter\Net\Http;
 
 use Amp\Http\Client\RequestBody;
-use Amp\Promise;
 use ScriptFUSION\Porter\Connector\AsyncDataSource;
-use function Amp\call;
 
 final class AsyncHttpDataSource implements AsyncDataSource
 {
@@ -24,13 +22,11 @@ final class AsyncHttpDataSource implements AsyncDataSource
         $this->url = $url;
     }
 
-    public function computeHash(): Promise
+    public function computeHash(): string
     {
-        return call(function (): \Generator {
-            $body = $this->body ? yield $this->body->createBodyStream()->read() : null;
+        $body = $this->body?->createBodyStream()->read();
 
-            return \md5("{$this->flattenHeaders()}$this->method$this->url$body", true);
-        });
+        return \md5("{$this->flattenHeaders()}$this->method$this->url$body", true);
     }
 
     public function getUrl(): string
