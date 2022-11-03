@@ -1,43 +1,38 @@
 <?php
 declare(strict_types=1);
 
-namespace ScriptFUSIONTest\Functional\Porter\Net\Http;
+namespace ScriptFUSIONTest\Functional;
 
 use Amp\Http\Client\Body\StringBody;
 use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\CookieAttributes;
 use Amp\Http\Cookie\ResponseCookie;
 use PHPUnit\Framework\TestCase;
-use ScriptFUSION\Porter\Connector\AsyncDataSource;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Connector\DataSource;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpDataSource;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpOptions;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
-use ScriptFUSION\Porter\Net\Http\HttpConnector;
-use ScriptFUSION\Porter\Net\Http\HttpDataSource;
-use ScriptFUSION\Porter\Net\Http\HttpOptions;
 use ScriptFUSION\Porter\Net\Http\HttpResponse;
 use ScriptFUSION\Porter\Net\Http\HttpServerException;
-use ScriptFUSION\Porter\Specification\ImportSpecification;
+use ScriptFUSION\Porter\Specification\Specification;
 use ScriptFUSION\Retry\ExceptionHandler\ExponentialBackoffExceptionHandler;
 use Symfony\Component\Process\Process;
 use function ScriptFUSION\Retry\retry;
 
 final class HttpConnectorTest extends TestCase
 {
-    private const HOST = '127.0.0.1:12345';
-    private const SSL_HOST = '127.0.0.1:6666';
+    private const HOST = '[::1]:12345';
+    private const SSL_HOST = '[::1]:6666';
     private const URI = 'feedback.php?baz=qux';
     private const DIR = __DIR__ . '/servers';
 
-    /** @var HttpConnector|AsyncHttpConnector */
-    private $connector;
+    private AsyncHttpConnector $connector;
 
     protected function setUp(): void
     {
-        $this->connector = new HttpConnector;
+        $this->connector = new AsyncHttpConnector();
     }
 
     public function testConnectionToLocalWebserver(): void
@@ -48,8 +43,8 @@ final class HttpConnectorTest extends TestCase
             $response = $this->fetch(
                 self::buildDataSource()
                     ->setMethod('POST')
-                    ->addHeader($header = 'Foo: Bar')
-                    ->setBody($body = 'Baz')
+                    ->addHeader($headerName = 'Foo', $headerValue = 'Bar')
+                    ->setBody(new StringBody($body = 'Baz'))
             );
         } finally {
             $this->stopServer($server);
@@ -60,7 +55,7 @@ final class HttpConnectorTest extends TestCase
             '[\APOST \Q' . self::HOST . '/' . self::URI . '\E HTTP/\d+\.\d+$]m',
             $response->getBody()
         );
-        self::assertMatchesRegularExpression("[^$header$]m", $response->getBody());
+        self::assertMatchesRegularExpression("[^$headerName: $headerValue$]m", $response->getBody());
         self::assertStringEndsWith("\n\n$body", $response->getBody());
     }
 
@@ -100,13 +95,13 @@ final class HttpConnectorTest extends TestCase
             new ResponseCookie(
                 $cookieName = uniqid(),
                 $cookievalue = 'Alfa',
-                CookieAttributes::default()->withDomain(explode(':', self::HOST)[0])
+                CookieAttributes::default()->withDomain(preg_replace('[:[^:]*$]', '', self::HOST))
             )
         );
 
         try {
-            $response = $this->fetchAsync(
-                self::buildAsyncDataSource()
+            $response = $this->fetch(
+                self::buildDataSource()
                     ->setMethod('POST')
                     ->addHeader($headerName = 'Foo', $headerValue = 'Bar')
                     ->setBody(new StringBody($body = 'Baz'))
@@ -169,13 +164,18 @@ final class HttpConnectorTest extends TestCase
         $server = $this->startServer();
 
         try {
-            $response = $this->fetch(self::buildDataSource('redirect.php'));
+            $response = $this->fetch(self::buildDataSource($source = 'redirect.php'));
         } finally {
             $this->stopServer($server);
         }
 
         self::assertSame(200, $response->getStatusCode());
-        self::assertInstanceOf(HttpResponse::class, $prev = $response->getPrevious());
+        self::assertMatchesRegularExpression(
+            '[^Referer: http://\\Q' . self::HOST . "/$source\\E$]m",
+            $response->getBody()
+        );
+
+        self::assertNotNull($prev = $response->getPrevious());
         self::assertSame(302, $prev->getStatusCode());
     }
 
@@ -191,7 +191,7 @@ final class HttpConnectorTest extends TestCase
         $this->expectException(HttpException::class);
 
         try {
-            $this->fetchAsync(self::buildAsyncDataSource('big.php'));
+            $this->fetch(self::buildDataSource('big.php'));
         } finally {
             $this->stopServer($server);
         }
@@ -210,7 +210,7 @@ final class HttpConnectorTest extends TestCase
         $this->expectException(HttpException::class);
 
         try {
-            $this->fetchAsync(self::buildAsyncDataSource());
+            $this->fetch(self::buildDataSource());
         } finally {
             $this->stopServer($server);
         }
@@ -218,7 +218,7 @@ final class HttpConnectorTest extends TestCase
 
     private function startServer(): Process
     {
-        $server = new Process(['php', '-S', self::HOST, '-t', self::DIR]);
+        $server = new Process([PHP_BINARY, '-S', self::HOST, '-t', self::DIR]);
         $server->start();
 
         self::waitForHttpServer(function () {
@@ -242,7 +242,7 @@ final class HttpConnectorTest extends TestCase
         // Create SSL tunnel process.
         Process::fromShellCommandline(
             // Generate self-signed SSL certificate in PEM format.
-            "openssl req -new -x509 -nodes -subj /CN=127.0.0.1 -keyout '$certificate' -out '$certificate'
+            "openssl req -new -x509 -nodes -subj /CN=::1 -keyout '$certificate' -out '$certificate'
 
             { stunnel4 -fd 0 || stunnel -fd 0; } <<.
                 # Disable PID to run as non-root user.
@@ -274,17 +274,7 @@ final class HttpConnectorTest extends TestCase
         return $this->connector->fetch($source);
     }
 
-    private function fetchAsync(AsyncDataSource $source): HttpResponse
-    {
-        return $this->connector->fetchAsync($source);
-    }
-
-    private static function buildDataSource(string $url = self::URI): HttpDataSource
-    {
-        return new HttpDataSource('http://' . self::HOST . "/$url");
-    }
-
-    private static function buildAsyncDataSource(string $url = self::URI): AsyncHttpDataSource
+    private static function buildDataSource(string $url = self::URI): DataSource
     {
         return new AsyncHttpDataSource('http://' . self::HOST . "/$url");
     }
@@ -302,7 +292,7 @@ final class HttpConnectorTest extends TestCase
     private static function waitForHttpServer(\Closure $serverInvoker): void
     {
         retry(
-            ImportSpecification::DEFAULT_FETCH_ATTEMPTS,
+            Specification::DEFAULT_FETCH_ATTEMPTS,
             $serverInvoker,
             static function (\Exception $exception) {
                 if (!$exception instanceof HttpConnectionException) {
@@ -317,7 +307,7 @@ final class HttpConnectorTest extends TestCase
         );
     }
 
-    private static function createSslConnector(string $certificate): HttpConnector
+    private static function createSslConnector(string $certificate): AsyncHttpConnector
     {
         $connector = new HttpConnector($options = new HttpOptions);
         $options->getSslOptions()->setCertificateAuthorityFilePath($certificate);

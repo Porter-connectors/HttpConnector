@@ -5,6 +5,7 @@ namespace ScriptFUSION\Porter\Net\Http;
 
 use Amp\ByteStream\StreamException;
 use Amp\Dns\DnsException;
+use Amp\Http\Client\Connection\ConnectionPool;
 use Amp\Http\Client\Connection\UnlimitedConnectionPool;
 use Amp\Http\Client\Cookie\CookieInterceptor;
 use Amp\Http\Client\Cookie\CookieJar;
@@ -16,16 +17,16 @@ use Amp\Http\Client\Interceptor\TooManyRedirectsException;
 use Amp\Http\Client\InvalidRequestException;
 use Amp\Http\Client\ParseException;
 use Amp\Http\Client\Request;
-use ScriptFUSION\Porter\Connector\AsyncConnector;
-use ScriptFUSION\Porter\Connector\AsyncDataSource;
+use ScriptFUSION\Porter\Connector\Connector;
+use ScriptFUSION\Porter\Connector\DataSource;
 
-class AsyncHttpConnector implements AsyncConnector
+class AsyncHttpConnector implements Connector
 {
-    private $options;
+    private AsyncHttpOptions $options;
 
-    private $cookieJar;
+    private CookieJar $cookieJar;
 
-    private $pool;
+    private ConnectionPool $pool;
 
     public function __construct(AsyncHttpOptions $options = null, CookieJar $cookieJar = null)
     {
@@ -41,7 +42,7 @@ class AsyncHttpConnector implements AsyncConnector
         // Sharing the pool is intended and should be harmless.
     }
 
-    public function fetchAsync(AsyncDataSource $source): HttpResponse
+    public function fetch(DataSource $source): HttpResponse
     {
         if (!$source instanceof AsyncHttpDataSource) {
             throw new \InvalidArgumentException('Source must be of type: AsyncHttpDataSource.');
@@ -51,7 +52,6 @@ class AsyncHttpConnector implements AsyncConnector
 
         try {
             $response = $client->request($this->createRequest($source));
-            $body = $response->getBody()->buffer();
         } catch (TooManyRedirectsException|InvalidRequestException|ParseException $exception) {
             // Exclude permanent exceptions that subclass HttpException.
             throw $exception;
@@ -64,7 +64,7 @@ class AsyncHttpConnector implements AsyncConnector
             throw new HttpConnectionException($exception->getMessage(), $exception->getCode(), $exception);
         }
 
-        $response = HttpResponse::fromAmpResponse($response, $body);
+        $response = new HttpResponse($response);
 
         $code = $response->getStatusCode();
         if ($code < 200 || $code >= 400) {

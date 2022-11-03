@@ -11,29 +11,20 @@ use ScriptFUSION\Porter\Connector\Recoverable\RecoverableException;
 class HttpServerException extends \RuntimeException implements RecoverableException
 {
     /**
-     * @var HttpResponse Response.
-     */
-    private $response;
-
-    /**
      * Initializes this instance with the specified HTTP error message and response.
      *
      * @param string $message HTTP error message.
      * @param HttpResponse $response Response.
      */
-    public function __construct($message, HttpResponse $response)
+    public function __construct(string $message, private readonly HttpResponse $response)
     {
         parent::__construct($message, $response->getStatusCode());
-
-        $this->response = $response;
     }
 
     /**
      * Gets the response.
-     *
-     * @return HttpResponse Response.
      */
-    public function getResponse()
+    public function getResponse(): HttpResponse
     {
         return $this->response;
     }

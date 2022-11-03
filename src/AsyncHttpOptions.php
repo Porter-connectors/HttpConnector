@@ -9,13 +9,13 @@ namespace ScriptFUSION\Porter\Net\Http;
 final class AsyncHttpOptions
 {
     // Transfer timeout in milliseconds until an HTTP request is automatically aborted, use 0 to disable.
-    private $transferTimeout = 15000;
+    private int $transferTimeout = 15_000;
 
     // Number of redirects to follow, or 0 to disable redirects.
-    private $maxRedirects = 5;
+    private int $maxRedirects = 5;
 
     // Maximum body length in bytes. Default 10MiB.
-    private $maxBodyLength = 0x100000 * 10;
+    private int $maxBodyLength = 0x100_000 * 10;
 
     public function getTransferTimeout(): int
     {

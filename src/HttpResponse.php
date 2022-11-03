@@ -3,94 +3,35 @@ declare(strict_types=1);
 
 namespace ScriptFUSION\Porter\Net\Http;
 
+use Amp\ByteStream\Payload;
 use Amp\Http\Client\Response;
-use ScriptFUSION\Type\StringType;
 
 /**
  * Represents an HTTP server response.
  */
 final class HttpResponse
 {
-    private $body;
+    private array $headers;
+    private string $version;
+    private int $statusCode;
+    private string $statusPhrase;
+    private ?self $previous;
+    private Payload $body;
+    private string $bodyBuffer;
 
-    private $headers = [];
-
-    private $version;
-
-    private $statusCode;
-
-    private $statusPhrase;
-
-    private $previous;
-
-    private function __construct()
+    public function __construct(Response $ampResponse)
     {
-        // Intentionally empty. Use factory methods.
-    }
-
-    public static function fromPhpWrapper(array $headers, string $body = null): self
-    {
-        $response = new self;
-
-        $response->parseHeaders($headers);
-        $response->body = "$body";
-
-        return $response;
-    }
-
-    public static function fromAmpResponse(Response $ampResponse, string $body): self
-    {
-        $response = new self;
-
-        $response->headers = $ampResponse->getHeaders();
-        $response->version = $ampResponse->getProtocolVersion();
-        $response->statusCode = $ampResponse->getStatus();
-        $response->statusPhrase = $ampResponse->getReason();
-        $response->body = $body;
-
-        return $response;
-    }
-
-    private function parseHeaders(array $headers): void
-    {
-        $header = end($headers);
-
-        // Iterate headers in reverse because they may represent multiple responses.
-        do {
-            if (!preg_match('[^([^:\h]+):\h*(.*)$]', $header, $matches)) {
-                if (!self::isProbablyVersionHeader($header)) {
-                    throw new \InvalidArgumentException("Invalid header: \"$header\".");
-                }
-
-                $this->parseVersionHeader($header);
-
-                // If there are further headers, recursively delegate to parent responses.
-                if (key($headers) > 0) {
-                    $this->previous = self::fromPhpWrapper(\array_slice($headers, 0, key($headers)));
-                }
-
-                break;
-            }
-
-            $this->headers[self::normalizeHeaderName($matches[1])][] = $matches[2];
-        } while ($header = prev($headers));
-    }
-
-    private static function isProbablyVersionHeader($header): bool
-    {
-        return StringType::startsWith($header, 'HTTP/');
-    }
-
-    private function parseVersionHeader($header): void
-    {
-        @list($version, $statusCode, $this->statusPhrase) = explode(' ', $header, 3);
-        $this->statusCode = (int)$statusCode;
-        $this->version = explode('/', $version, 2)[1];
+        $this->headers = $ampResponse->getHeaders();
+        $this->version = $ampResponse->getProtocolVersion();
+        $this->statusCode = $ampResponse->getStatus();
+        $this->statusPhrase = $ampResponse->getReason();
+        $this->previous = $ampResponse->getPreviousResponse() ? new self($ampResponse->getPreviousResponse()) : null;
+        $this->body = $ampResponse->getBody();
     }
 
     public function __toString(): string
     {
-        return $this->body;
+        return $this->getBody();
     }
 
     public function getProtocolVersion(): string
@@ -103,12 +44,12 @@ final class HttpResponse
         return $this->headers;
     }
 
-    public function hasHeader($name): bool
+    public function hasHeader(string $name): bool
     {
         return array_key_exists(self::normalizeHeaderName($name), $this->headers);
     }
 
-    public function getHeader($name): array
+    public function getHeader(string $name): array
     {
         if (!$this->hasHeader($name)) {
             return [];
@@ -119,7 +60,7 @@ final class HttpResponse
 
     public function getBody(): string
     {
-        return $this->body;
+        return $this->bodyBuffer ??= $this->body->buffer();
     }
 
     public function getStatusCode(): int

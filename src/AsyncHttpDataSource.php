@@ -4,22 +4,16 @@ declare(strict_types=1);
 namespace ScriptFUSION\Porter\Net\Http;
 
 use Amp\Http\Client\RequestBody;
-use ScriptFUSION\Porter\Connector\AsyncDataSource;
+use ScriptFUSION\Porter\Connector\DataSource;
 
-final class AsyncHttpDataSource implements AsyncDataSource
+final class AsyncHttpDataSource implements DataSource
 {
-    private $url;
+    private string $method = 'GET';
+    private ?RequestBody $body = null;
+    private array $headers = [];
 
-    private $method = 'GET';
-
-    /** @var RequestBody|null */
-    private $body;
-
-    private $headers = [];
-
-    public function __construct(string $url)
+    public function __construct(private readonly string $url)
     {
-        $this->url = $url;
     }
 
     public function computeHash(): string
