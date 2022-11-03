@@ -1,25 +1,25 @@
-<?php declare(strict_types=1);
+<?php
+declare(strict_types=1);
 
-namespace ScriptFUSIONTest\Unit\Porter\Net\Http;
+namespace ScriptFUSIONTest\Unit;
 
 use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Connector\Recoverable\RecoverableException;
 use ScriptFUSION\Porter\Net\Http\HttpResponse;
 use ScriptFUSION\Porter\Net\Http\HttpServerException;
+use ScriptFUSIONTest\FixtureFactory;
 
 final class HttpServerExceptionTest extends TestCase
 {
-    /** @var HttpServerException */
-    private $exception;
+    private HttpServerException $exception;
 
-    /** @var HttpResponse */
-    private $response;
+    private HttpResponse $response;
 
     protected function setUp(): void
     {
         $this->exception = new HttpServerException(
             'foo',
-            $this->response = HttpResponse::fromPhpWrapper(['HTTP/1 123'])
+            $this->response = new HttpResponse(FixtureFactory::createResponse(status: 123))
         );
     }
 

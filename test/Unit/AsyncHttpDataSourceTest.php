@@ -12,8 +12,7 @@ use ScriptFUSION\Porter\Net\Http\AsyncHttpDataSource;
  */
 final class AsyncHttpDataSourceTest extends TestCase
 {
-    /** @var AsyncHttpDataSource */
-    private $source;
+    private AsyncHttpDataSource $source;
 
     protected function setUp(): void
     {

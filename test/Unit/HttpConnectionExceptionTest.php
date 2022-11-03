@@ -1,6 +1,7 @@
-<?php declare(strict_types=1);
+<?php
+declare(strict_types=1);
 
-namespace ScriptFUSIONTest\Unit\Porter\Net\Http;
+namespace ScriptFUSIONTest\Unit;
 
 use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Connector\Recoverable\RecoverableException;

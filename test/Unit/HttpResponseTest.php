@@ -5,6 +5,7 @@ namespace ScriptFUSIONTest\Unit;
 
 use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Net\Http\HttpResponse;
+use ScriptFUSIONTest\FixtureFactory;
 
 /**
  * @see HttpResponse
@@ -12,16 +13,16 @@ use ScriptFUSION\Porter\Net\Http\HttpResponse;
 final class HttpResponseTest extends TestCase
 {
     /**
-     * Tests that headers are case insensitive when calling accessor methods.
+     * Tests that headers are case-insensitive when calling accessor methods.
      */
     public function testHeaderCaseSensitivity(): void
     {
-        $response = HttpResponse::fromPhpWrapper(['Foo: Bar']);
+        $response = new HttpResponse(FixtureFactory::createResponse(headers: [$name = 'Alfa' => $value = 'Beta']));
 
-        self::assertTrue($response->hasHeader('Foo'));
-        self::assertTrue($response->hasHeader('foo'));
+        self::assertTrue($response->hasHeader($name));
+        self::assertTrue($response->hasHeader(strtolower($name)));
 
-        self::assertSame(['Bar'], $response->getHeader('Foo'));
-        self::assertSame(['Bar'], $response->getHeader('foo'));
+        self::assertSame([$value], $response->getHeader($name));
+        self::assertSame([$value], $response->getHeader(strtolower($name)));
     }
 }
