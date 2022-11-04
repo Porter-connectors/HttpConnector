@@ -10,13 +10,13 @@ use Amp\Http\Cookie\ResponseCookie;
 use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Connector\DataSource;
+use ScriptFUSION\Porter\Import\Import;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpDataSource;
 use ScriptFUSION\Porter\Net\Http\AsyncHttpOptions;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
 use ScriptFUSION\Porter\Net\Http\HttpResponse;
 use ScriptFUSION\Porter\Net\Http\HttpServerException;
-use ScriptFUSION\Porter\Specification\Specification;
 use ScriptFUSION\Retry\ExceptionHandler\ExponentialBackoffExceptionHandler;
 use Symfony\Component\Process\Process;
 use function ScriptFUSION\Retry\retry;
@@ -187,11 +187,12 @@ final class HttpConnectorTest extends TestCase
         $server = $this->startServer();
 
         $this->connector = new AsyncHttpConnector();
+        $response = $this->fetch(self::buildDataSource('big.php'));
 
         $this->expectException(HttpException::class);
 
         try {
-            $this->fetch(self::buildDataSource('big.php'));
+            $response->getBody();
         } finally {
             $this->stopServer($server);
         }
@@ -205,12 +206,12 @@ final class HttpConnectorTest extends TestCase
         $server = $this->startServer();
 
         $this->connector = new AsyncHttpConnector((new AsyncHttpOptions)->setMaxBodyLength(1));
+        $response = $this->fetch(self::buildDataSource());
 
-        // N.B. Actual type is Amp\Artax\ParseException.
         $this->expectException(HttpException::class);
 
         try {
-            $this->fetch(self::buildDataSource());
+            $response->getBody();
         } finally {
             $this->stopServer($server);
         }
@@ -242,7 +243,7 @@ final class HttpConnectorTest extends TestCase
         // Create SSL tunnel process.
         Process::fromShellCommandline(
             // Generate self-signed SSL certificate in PEM format.
-            "openssl req -new -x509 -nodes -subj /CN=::1 -keyout '$certificate' -out '$certificate'
+            "openssl req -new -x509 -nodes -subj /CN=[::1] -keyout '$certificate' -out '$certificate'
 
             { stunnel4 -fd 0 || stunnel -fd 0; } <<.
                 # Disable PID to run as non-root user.
@@ -281,7 +282,7 @@ final class HttpConnectorTest extends TestCase
 
     private function fetchViaSsl(Connector $connector): HttpResponse
     {
-        return $connector->fetch(new HttpDataSource('https://' . self::SSL_HOST . '/' . self::URI));
+        return $connector->fetch(new AsyncHttpDataSource('https://' . self::SSL_HOST . '/' . self::URI));
     }
 
     /**
@@ -292,7 +293,7 @@ final class HttpConnectorTest extends TestCase
     private static function waitForHttpServer(\Closure $serverInvoker): void
     {
         retry(
-            Specification::DEFAULT_FETCH_ATTEMPTS,
+            Import::DEFAULT_FETCH_ATTEMPTS,
             $serverInvoker,
             static function (\Exception $exception) {
                 if (!$exception instanceof HttpConnectionException) {
@@ -309,9 +310,6 @@ final class HttpConnectorTest extends TestCase
 
     private static function createSslConnector(string $certificate): AsyncHttpConnector
     {
-        $connector = new HttpConnector($options = new HttpOptions);
-        $options->getSslOptions()->setCertificateAuthorityFilePath($certificate);
-
-        return $connector;
+        return new AsyncHttpConnector((new AsyncHttpOptions)->setCertificateAuthorityFilePath($certificate));
     }
 }

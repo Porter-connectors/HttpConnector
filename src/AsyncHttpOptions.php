@@ -17,6 +17,8 @@ final class AsyncHttpOptions
     // Maximum body length in bytes. Default 10MiB.
     private int $maxBodyLength = 0x100_000 * 10;
 
+    private ?string $certificateAuthorityFilePath = null;
+
     public function getTransferTimeout(): int
     {
         return $this->transferTimeout;
@@ -49,6 +51,18 @@ final class AsyncHttpOptions
     public function setMaxBodyLength($maxBodyLength): self
     {
         $this->maxBodyLength = $maxBodyLength;
+
+        return $this;
+    }
+
+    public function getCertificateAuthorityFilePath(): ?string
+    {
+        return $this->certificateAuthorityFilePath;
+    }
+
+    public function setCertificateAuthorityFilePath(string $path): self
+    {
+        $this->certificateAuthorityFilePath = $path;
 
         return $this;
     }

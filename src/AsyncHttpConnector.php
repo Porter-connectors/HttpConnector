@@ -6,6 +6,7 @@ namespace ScriptFUSION\Porter\Net\Http;
 use Amp\ByteStream\StreamException;
 use Amp\Dns\DnsException;
 use Amp\Http\Client\Connection\ConnectionPool;
+use Amp\Http\Client\Connection\DefaultConnectionFactory;
 use Amp\Http\Client\Connection\UnlimitedConnectionPool;
 use Amp\Http\Client\Cookie\CookieInterceptor;
 use Amp\Http\Client\Cookie\CookieJar;
@@ -17,6 +18,8 @@ use Amp\Http\Client\Interceptor\TooManyRedirectsException;
 use Amp\Http\Client\InvalidRequestException;
 use Amp\Http\Client\ParseException;
 use Amp\Http\Client\Request;
+use Amp\Socket\ClientTlsContext;
+use Amp\Socket\ConnectContext;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Connector\DataSource;
 
@@ -32,7 +35,12 @@ class AsyncHttpConnector implements Connector
     {
         $this->options = $options ?: new AsyncHttpOptions;
         $this->cookieJar = $cookieJar ?: new LocalCookieJar();
-        $this->pool = new UnlimitedConnectionPool();
+        $this->pool = new UnlimitedConnectionPool(new DefaultConnectionFactory(
+            connectContext: (new ConnectContext())->withTlsContext(
+                (new ClientTlsContext(''))
+                    ->withCaFile($options?->getCertificateAuthorityFilePath())
+            )
+        ));
     }
 
     public function __clone()
