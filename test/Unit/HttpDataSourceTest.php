@@ -5,20 +5,20 @@ namespace ScriptFUSIONTest\Unit;
 
 use Amp\Http\Client\Body\StringBody;
 use PHPUnit\Framework\TestCase;
-use ScriptFUSION\Porter\Net\Http\AsyncHttpDataSource;
+use ScriptFUSION\Porter\Net\Http\HttpDataSource;
 
 /**
- * @see AsyncHttpDataSource
+ * @see HttpDataSource
  */
-final class AsyncHttpDataSourceTest extends TestCase
+final class HttpDataSourceTest extends TestCase
 {
-    private AsyncHttpDataSource $source;
+    private HttpDataSource $source;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->source = new AsyncHttpDataSource('foo');
+        $this->source = new HttpDataSource('foo');
     }
 
     /**

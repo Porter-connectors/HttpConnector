@@ -11,9 +11,9 @@ use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Connector\DataSource;
 use ScriptFUSION\Porter\Import\Import;
-use ScriptFUSION\Porter\Net\Http\AsyncHttpConnector;
-use ScriptFUSION\Porter\Net\Http\AsyncHttpDataSource;
-use ScriptFUSION\Porter\Net\Http\AsyncHttpOptions;
+use ScriptFUSION\Porter\Net\Http\HttpConnector;
+use ScriptFUSION\Porter\Net\Http\HttpDataSource;
+use ScriptFUSION\Porter\Net\Http\HttpOptions;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
 use ScriptFUSION\Porter\Net\Http\HttpResponse;
 use ScriptFUSION\Porter\Net\Http\HttpServerException;
@@ -28,11 +28,11 @@ final class HttpConnectorTest extends TestCase
     private const URI = 'feedback.php?baz=qux';
     private const DIR = __DIR__ . '/servers';
 
-    private AsyncHttpConnector $connector;
+    private HttpConnector $connector;
 
     protected function setUp(): void
     {
-        $this->connector = new AsyncHttpConnector();
+        $this->connector = new HttpConnector();
     }
 
     public function testConnectionToLocalWebserver(): void
@@ -88,7 +88,7 @@ final class HttpConnectorTest extends TestCase
     {
         $server = $this->startServer();
 
-        $this->connector = new AsyncHttpConnector;
+        $this->connector = new HttpConnector;
 
         // Test cookies are sent.
         $this->connector->getCookieJar()->store(
@@ -186,7 +186,7 @@ final class HttpConnectorTest extends TestCase
     {
         $server = $this->startServer();
 
-        $this->connector = new AsyncHttpConnector();
+        $this->connector = new HttpConnector();
         $response = $this->fetch(self::buildDataSource('big.php'));
 
         $this->expectException(HttpException::class);
@@ -205,7 +205,7 @@ final class HttpConnectorTest extends TestCase
     {
         $server = $this->startServer();
 
-        $this->connector = new AsyncHttpConnector((new AsyncHttpOptions)->setMaxBodyLength(1));
+        $this->connector = new HttpConnector((new HttpOptions)->setMaxBodyLength(1));
         $response = $this->fetch(self::buildDataSource());
 
         $this->expectException(HttpException::class);
@@ -277,12 +277,12 @@ final class HttpConnectorTest extends TestCase
 
     private static function buildDataSource(string $url = self::URI): DataSource
     {
-        return new AsyncHttpDataSource('http://' . self::HOST . "/$url");
+        return new HttpDataSource('http://' . self::HOST . "/$url");
     }
 
     private function fetchViaSsl(Connector $connector): HttpResponse
     {
-        return $connector->fetch(new AsyncHttpDataSource('https://' . self::SSL_HOST . '/' . self::URI));
+        return $connector->fetch(new HttpDataSource('https://' . self::SSL_HOST . '/' . self::URI));
     }
 
     /**
@@ -308,8 +308,8 @@ final class HttpConnectorTest extends TestCase
         );
     }
 
-    private static function createSslConnector(string $certificate): AsyncHttpConnector
+    private static function createSslConnector(string $certificate): HttpConnector
     {
-        return new AsyncHttpConnector((new AsyncHttpOptions)->setCertificateAuthorityFilePath($certificate));
+        return new HttpConnector((new HttpOptions)->setCertificateAuthorityFilePath($certificate));
     }
 }

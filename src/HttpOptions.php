@@ -6,7 +6,7 @@ namespace ScriptFUSION\Porter\Net\Http;
 /**
  * Encapsulates async HTTP client options.
  */
-final class AsyncHttpOptions
+final class HttpOptions
 {
     // Transfer timeout in milliseconds until an HTTP request is automatically aborted, use 0 to disable.
     private int $transferTimeout = 15_000;

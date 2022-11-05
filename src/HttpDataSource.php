@@ -6,7 +6,7 @@ namespace ScriptFUSION\Porter\Net\Http;
 use Amp\Http\Client\RequestBody;
 use ScriptFUSION\Porter\Connector\DataSource;
 
-final class AsyncHttpDataSource implements DataSource
+final class HttpDataSource implements DataSource
 {
     private string $method = 'GET';
     private ?RequestBody $body = null;

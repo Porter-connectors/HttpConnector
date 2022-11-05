@@ -23,17 +23,17 @@ use Amp\Socket\ConnectContext;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Connector\DataSource;
 
-class AsyncHttpConnector implements Connector
+class HttpConnector implements Connector
 {
-    private AsyncHttpOptions $options;
+    private HttpOptions $options;
 
     private CookieJar $cookieJar;
 
     private ConnectionPool $pool;
 
-    public function __construct(AsyncHttpOptions $options = null, CookieJar $cookieJar = null)
+    public function __construct(HttpOptions $options = null, CookieJar $cookieJar = null)
     {
-        $this->options = $options ?: new AsyncHttpOptions;
+        $this->options = $options ?: new HttpOptions;
         $this->cookieJar = $cookieJar ?: new LocalCookieJar();
         $this->pool = new UnlimitedConnectionPool(new DefaultConnectionFactory(
             connectContext: (new ConnectContext())->withTlsContext(
@@ -52,8 +52,8 @@ class AsyncHttpConnector implements Connector
 
     public function fetch(DataSource $source): HttpResponse
     {
-        if (!$source instanceof AsyncHttpDataSource) {
-            throw new \InvalidArgumentException('Source must be of type: AsyncHttpDataSource.');
+        if (!$source instanceof HttpDataSource) {
+            throw new \InvalidArgumentException('Source must be of type: HttpDataSource.');
         }
 
         $client = $this->createClient();
@@ -98,7 +98,7 @@ class AsyncHttpConnector implements Connector
         ;
     }
 
-    private function createRequest(AsyncHttpDataSource $source): Request
+    private function createRequest(HttpDataSource $source): Request
     {
         $request = new Request($source->getUrl(), $source->getMethod());
         $source->getBody() && $request->setBody($source->getBody());
@@ -110,7 +110,7 @@ class AsyncHttpConnector implements Connector
         return $request;
     }
 
-    public function getOptions(): AsyncHttpOptions
+    public function getOptions(): HttpOptions
     {
         return $this->options;
     }

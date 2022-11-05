@@ -7,7 +7,8 @@ HttpConnector
 [![Test coverage][Coverage image]][Coverage]
 [![Code style][Style image]][Style]
 
-Provides an HTTP connector for [Porter][Porter] that fetches data from an HTTP server via the PHP wrapper.
+Provides an HTTP connector for [Porter][Porter] that fetches data from an HTTP server via a
+[fiber-capable HTTP client][HTTP client].
 
 
   [Releases]: https://github.com/Porter-connectors/HttpConnector/releases
@@ -22,3 +23,4 @@ Provides an HTTP connector for [Porter][Porter] that fetches data from an HTTP s
   [Style image]: https://styleci.io/repos/94378769/shield?style=flat "Code style"
 
   [Porter]: https://github.com/ScriptFUSION/Porter
+  [HTTP client]: https://github.com/amphp/http-client
