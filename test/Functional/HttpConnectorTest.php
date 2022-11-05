@@ -23,8 +23,9 @@ use function ScriptFUSION\Retry\retry;
 
 final class HttpConnectorTest extends TestCase
 {
-    private const HOST = '[::1]:12345';
-    private const SSL_HOST = '[::1]:6666';
+    private const IP = '[::1]';
+    private const HOST = self::IP . ':12345';
+    private const SSL_HOST = self::IP . ':6666';
     private const URI = 'feedback.php?baz=qux';
     private const DIR = __DIR__ . '/servers';
 
@@ -186,13 +187,10 @@ final class HttpConnectorTest extends TestCase
     {
         $server = $this->startServer();
 
-        $this->connector = new HttpConnector();
-        $response = $this->fetch(self::buildDataSource('big.php'));
-
         $this->expectException(HttpException::class);
 
         try {
-            $response->getBody();
+            $this->fetch(self::buildDataSource('big.php'));
         } finally {
             $this->stopServer($server);
         }
@@ -206,12 +204,11 @@ final class HttpConnectorTest extends TestCase
         $server = $this->startServer();
 
         $this->connector = new HttpConnector((new HttpOptions)->setMaxBodyLength(1));
-        $response = $this->fetch(self::buildDataSource());
 
         $this->expectException(HttpException::class);
 
         try {
-            $response->getBody();
+            $this->fetch(self::buildDataSource());
         } finally {
             $this->stopServer($server);
         }
@@ -236,6 +233,7 @@ final class HttpConnectorTest extends TestCase
 
     private function startSsl(): string
     {
+        $ip = self::IP;
         $accept = str_replace($filter = ['[', ']'], '', self::SSL_HOST);
         $connect = str_replace($filter, '', self::HOST);
         $certificate = tempnam(sys_get_temp_dir(), '');
@@ -243,7 +241,7 @@ final class HttpConnectorTest extends TestCase
         // Create SSL tunnel process.
         Process::fromShellCommandline(
             // Generate self-signed SSL certificate in PEM format.
-            "openssl req -new -x509 -nodes -subj /CN=[::1] -keyout '$certificate' -out '$certificate'
+            "openssl req -new -x509 -nodes -subj /CN=$ip -keyout '$certificate' -out '$certificate'
 
             { stunnel4 -fd 0 || stunnel -fd 0; } <<.
                 # Disable PID to run as non-root user.
@@ -258,9 +256,7 @@ final class HttpConnectorTest extends TestCase
 ."
         )->start();
 
-        self::waitForHttpServer(function () use ($certificate): void {
-            $this->fetchViaSsl(self::createSslConnector($certificate));
-        });
+        self::waitForHttpServer(fn () => $this->fetchViaSsl(self::createSslConnector($certificate)));
 
         return $certificate;
     }
@@ -301,9 +297,8 @@ final class HttpConnectorTest extends TestCase
                 }
 
                 static $handler;
-                $handler = $handler ?: new ExponentialBackoffExceptionHandler;
 
-                return $handler();
+                return ($handler ??= new ExponentialBackoffExceptionHandler)();
             }
         );
     }

@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace ScriptFUSION\Porter\Net\Http;
 
-use Amp\ByteStream\Payload;
 use Amp\Http\Client\Response;
 
 /**
@@ -16,8 +15,7 @@ final class HttpResponse
     private int $statusCode;
     private string $statusPhrase;
     private ?self $previous;
-    private Payload $body;
-    private string $bodyBuffer;
+    private string $bufferedBody;
 
     public function __construct(Response $ampResponse)
     {
@@ -26,7 +24,8 @@ final class HttpResponse
         $this->statusCode = $ampResponse->getStatus();
         $this->statusPhrase = $ampResponse->getReason();
         $this->previous = $ampResponse->getPreviousResponse() ? new self($ampResponse->getPreviousResponse()) : null;
-        $this->body = $ampResponse->getBody();
+        // We must buffer body immediately, otherwise we get memory leaks.
+        $this->bufferedBody = $ampResponse->getBody()->isReadable() ? $ampResponse->getBody()->buffer() : '';
     }
 
     public function __toString(): string
@@ -60,7 +59,7 @@ final class HttpResponse
 
     public function getBody(): string
     {
-        return $this->bodyBuffer ??= $this->body->buffer();
+        return $this->bufferedBody;
     }
 
     public function getStatusCode(): int
