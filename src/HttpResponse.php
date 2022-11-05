@@ -26,7 +26,7 @@ final class HttpResponse
         $this->statusCode = $ampResponse->getStatus();
         $this->statusPhrase = $ampResponse->getReason();
         $this->previous = $ampResponse->getPreviousResponse() ? new self($ampResponse->getPreviousResponse()) : null;
-        $this->body = $ampResponse->getBody();
+        $this->bodyBuffer = $ampResponse->getBody()->buffer();
     }
 
     public function __toString(): string
