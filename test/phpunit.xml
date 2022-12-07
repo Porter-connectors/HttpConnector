@@ -1,5 +1,6 @@
 <phpunit
     beStrictAboutOutputDuringTests="true"
+    executionOrder="random"
 >
     <testsuite name="default">
         <directory>.</directory>
