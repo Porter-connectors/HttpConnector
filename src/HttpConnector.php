@@ -18,7 +18,6 @@ use Amp\Http\Client\Interceptor\TooManyRedirectsException;
 use Amp\Http\Client\InvalidRequestException;
 use Amp\Http\Client\ParseException;
 use Amp\Http\Client\Request;
-use Amp\Socket\ClientTlsContext;
 use Amp\Socket\ConnectContext;
 use ScriptFUSION\Porter\Connector\Connector;
 use ScriptFUSION\Porter\Connector\DataSource;
@@ -31,16 +30,13 @@ class HttpConnector implements Connector
 
     private ConnectionPool $pool;
 
-    public function __construct(HttpOptions $options = null, CookieJar $cookieJar = null)
+    public function __construct(HttpOptions $options = null, TlsOptions $tlsOptions = null, CookieJar $cookieJar = null)
     {
         $this->options = $options ?: new HttpOptions;
         $this->cookieJar = $cookieJar ?: new LocalCookieJar();
-        $this->pool = new UnlimitedConnectionPool(new DefaultConnectionFactory(
-            connectContext: (new ConnectContext())->withTlsContext(
-                (new ClientTlsContext(''))
-                    ->withCaFile($options?->getCertificateAuthorityFilePath())
-            )
-        ));
+        $this->pool = new UnlimitedConnectionPool($tlsOptions ? new DefaultConnectionFactory(
+            connectContext: (new ConnectContext())->withTlsContext($tlsOptions->toAmpContext())
+        ) : null);
     }
 
     public function __clone()
@@ -61,7 +57,7 @@ class HttpConnector implements Connector
         try {
             $response = $client->request($this->createRequest($source));
         } catch (TooManyRedirectsException|InvalidRequestException|ParseException $exception) {
-            // Exclude permanent exceptions that subclass HttpException.
+            // Exclude fatal exceptions that subclass HttpException.
             throw $exception;
         } catch (DnsException|StreamException|HttpException $exception) {
             /*

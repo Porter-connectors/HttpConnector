@@ -17,6 +17,7 @@ use ScriptFUSION\Porter\Net\Http\HttpOptions;
 use ScriptFUSION\Porter\Net\Http\HttpConnectionException;
 use ScriptFUSION\Porter\Net\Http\HttpResponse;
 use ScriptFUSION\Porter\Net\Http\HttpServerException;
+use ScriptFUSION\Porter\Net\Http\TlsOptions;
 use ScriptFUSION\Retry\ExceptionHandler\ExponentialBackoffExceptionHandler;
 use Symfony\Component\Process\Process;
 use function ScriptFUSION\Retry\retry;
@@ -305,6 +306,6 @@ final class HttpConnectorTest extends TestCase
 
     private static function createSslConnector(string $certificate): HttpConnector
     {
-        return new HttpConnector((new HttpOptions)->setCertificateAuthorityFilePath($certificate));
+        return new HttpConnector(tlsOptions: (new TlsOptions)->setCertificateAuthorityFilePath($certificate));
     }
 }

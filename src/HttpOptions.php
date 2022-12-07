@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace ScriptFUSION\Porter\Net\Http;
 
 /**
- * Encapsulates async HTTP client options.
+ * Encapsulates HTTP client options.
  */
 final class HttpOptions
 {
@@ -51,18 +51,6 @@ final class HttpOptions
     public function setMaxBodyLength($maxBodyLength): self
     {
         $this->maxBodyLength = $maxBodyLength;
-
-        return $this;
-    }
-
-    public function getCertificateAuthorityFilePath(): ?string
-    {
-        return $this->certificateAuthorityFilePath;
-    }
-
-    public function setCertificateAuthorityFilePath(string $path): self
-    {
-        $this->certificateAuthorityFilePath = $path;
 
         return $this;
     }
