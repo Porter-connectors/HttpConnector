@@ -30,7 +30,7 @@ final class HttpDataSourceTest extends TestCase
         self::assertSame($hash, $this->source->computeHash());
 
         self::assertNotSame($hash, $hash = $this->source->setMethod('Alfa')->computeHash());
-        self::assertNotSame($hash, $hash = $this->source->setBody(new StringBody('Bravo'))->computeHash());
+        self::assertNotSame($hash, $hash = $this->source->setBody('Bravo')->computeHash());
         self::assertNotSame($hash, $hash = $this->source->addHeader('Charlie', 'Delta')->computeHash());
 
         self::assertSame($hash, $this->source->computeHash());

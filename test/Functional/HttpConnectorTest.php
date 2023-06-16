@@ -46,7 +46,7 @@ final class HttpConnectorTest extends TestCase
                 self::buildDataSource()
                     ->setMethod('POST')
                     ->addHeader($headerName = 'Foo', $headerValue = 'Bar')
-                    ->setBody(new StringBody($body = 'Baz'))
+                    ->setBody($body = 'Baz')
             );
         } finally {
             $this->stopServer($server);
@@ -106,7 +106,7 @@ final class HttpConnectorTest extends TestCase
                 self::buildDataSource()
                     ->setMethod('POST')
                     ->addHeader($headerName = 'Foo', $headerValue = 'Bar')
-                    ->setBody(new StringBody($body = 'Baz'))
+                    ->setBody($body = 'Baz')
             );
         } finally {
             $this->stopServer($server);

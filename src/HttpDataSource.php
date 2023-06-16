@@ -3,13 +3,14 @@ declare(strict_types=1);
 
 namespace ScriptFUSION\Porter\Net\Http;
 
-use Amp\Http\Client\RequestBody;
+use Amp\Http\Client\BufferedContent;
+use Amp\Http\Client\HttpContent;
 use ScriptFUSION\Porter\Connector\DataSource;
 
 final class HttpDataSource implements DataSource
 {
     private string $method = 'GET';
-    private ?RequestBody $body = null;
+    private ?HttpContent $body = null;
     private array $headers = [];
 
     public function __construct(private readonly string $url)
@@ -18,7 +19,7 @@ final class HttpDataSource implements DataSource
 
     public function computeHash(): string
     {
-        $body = $this->body?->createBodyStream()->read();
+        $body = $this->body?->getContent()->read();
 
         return \md5("{$this->flattenHeaders()}$this->method$this->url$body", true);
     }
@@ -40,14 +41,14 @@ final class HttpDataSource implements DataSource
         return $this;
     }
 
-    public function getBody(): ?RequestBody
+    public function getBody(): ?HttpContent
     {
         return $this->body;
     }
 
-    public function setBody(?RequestBody $body): self
+    public function setBody(HttpContent|string $body): self
     {
-        $this->body = $body;
+        $this->body = is_string($body) ? BufferedContent::fromString($body) : $body;
 
         return $this;
     }
