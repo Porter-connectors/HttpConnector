@@ -13,6 +13,9 @@ final class HttpDataSource implements DataSource
     private ?HttpContent $body = null;
     private array $headers = [];
 
+    // Maximum body length in bytes.
+    private ?int $maxBodyLength = null;
+
     public function __construct(private readonly string $url)
     {
     }
@@ -118,5 +121,28 @@ final class HttpDataSource implements DataSource
         }
 
         return $flattened;
+    }
+
+    /**
+     * Gets the maximum body length.
+     *
+     * @return int|null Body length in bytes, or null to use the default from HttpOptions.
+     */
+    public function getMaxBodyLength(): ?int
+    {
+        return $this->maxBodyLength;
+    }
+
+    /**
+     * Sets the maximum body length.
+     *
+     * @param int|null $maxBodyLength Body length in bytes, or null to use the default from HttpOptions.
+     *     Set to 0 to disable.
+     */
+    public function setMaxBodyLength(?int $maxBodyLength): self
+    {
+        $this->maxBodyLength = $maxBodyLength;
+
+        return $this;
     }
 }

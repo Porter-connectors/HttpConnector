@@ -101,7 +101,7 @@ class HttpConnector implements Connector
         $request->setHeaders($source->getHeaders());
         $request->setTransferTimeout($this->options->getTransferTimeout());
         $request->setInactivityTimeout($request->getTransferTimeout());
-        $request->setBodySizeLimit($this->options->getMaxBodyLength());
+        $request->setBodySizeLimit($source->getMaxBodyLength() ?? $this->options->getMaxBodyLength());
 
         return $request;
     }

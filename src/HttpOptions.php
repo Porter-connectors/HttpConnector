@@ -14,10 +14,8 @@ final class HttpOptions
     // Number of redirects to follow, or 0 to disable redirects.
     private int $maxRedirects = 5;
 
-    // Maximum body length in bytes. Default 10MiB.
+    // Maximum body length in bytes, use 0 to disable. Default 10MiB.
     private int $maxBodyLength = 0x100_000 * 10;
-
-    private ?string $certificateAuthorityFilePath = null;
 
     public function getTransferTimeout(): int
     {
@@ -43,12 +41,22 @@ final class HttpOptions
         return $this;
     }
 
+    /**
+     * Gets the maximum body length.
+     *
+     * @return int Body length in bytes.
+     */
     public function getMaxBodyLength(): int
     {
         return $this->maxBodyLength;
     }
 
-    public function setMaxBodyLength($maxBodyLength): self
+    /**
+     * Sets the maximum body length.
+     *
+     * @param int $maxBodyLength Body length in bytes. Set to 0 to disable.
+     */
+    public function setMaxBodyLength(int $maxBodyLength): self
     {
         $this->maxBodyLength = $maxBodyLength;
 

@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace ScriptFUSIONTest\Unit;
 
-use Amp\Http\Client\Body\StringBody;
 use PHPUnit\Framework\TestCase;
 use ScriptFUSION\Porter\Net\Http\HttpDataSource;
 

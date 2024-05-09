@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace ScriptFUSIONTest\Functional;
 
-use Amp\Http\Client\Body\StringBody;
 use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\CookieAttributes;
 use Amp\Http\Cookie\ResponseCookie;
@@ -215,6 +214,22 @@ final class HttpConnectorTest extends TestCase
         }
     }
 
+    /**
+     * Tests that when the max body length is overriden on a per-request basis, an HTTP exception is thrown.
+     */
+    public function testCustomBodyLengthOverride(): void
+    {
+        $server = $this->startServer();
+
+        $this->expectException(HttpException::class);
+
+        try {
+            $this->fetch(self::buildDataSource()->setMaxBodyLength(1));
+        } finally {
+            $this->stopServer($server);
+        }
+    }
+
     private function startServer(): Process
     {
         $server = new Process([PHP_BINARY, '-S', self::HOST, '-t', self::DIR]);
@@ -272,7 +287,7 @@ final class HttpConnectorTest extends TestCase
         return $this->connector->fetch($source);
     }
 
-    private static function buildDataSource(string $url = self::URI): DataSource
+    private static function buildDataSource(string $url = self::URI): HttpDataSource
     {
         return new HttpDataSource('http://' . self::HOST . "/$url");
     }
