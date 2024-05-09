@@ -137,7 +137,6 @@ final class HttpDataSource implements DataSource
      * Sets the maximum body length.
      *
      * @param int|null $maxBodyLength Body length in bytes, or null to use the default from HttpOptions.
-     *     Set to 0 to disable.
      */
     public function setMaxBodyLength(?int $maxBodyLength): self
     {

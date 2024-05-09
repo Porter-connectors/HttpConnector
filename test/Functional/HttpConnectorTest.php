@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace ScriptFUSIONTest\Functional;
 
+use Amp\ByteStream\StreamException;
 use Amp\Http\Client\HttpException;
 use Amp\Http\Cookie\CookieAttributes;
 use Amp\Http\Cookie\ResponseCookie;
@@ -187,7 +188,7 @@ final class HttpConnectorTest extends TestCase
     {
         $server = $this->startServer();
 
-        $this->expectException(HttpException::class);
+        $this->expectException(StreamException::class);
 
         try {
             $this->fetch(self::buildDataSource('big.php'));
@@ -205,7 +206,7 @@ final class HttpConnectorTest extends TestCase
 
         $this->connector = new HttpConnector((new HttpOptions)->setMaxBodyLength(1));
 
-        $this->expectException(HttpException::class);
+        $this->expectException(StreamException::class);
 
         try {
             $this->fetch(self::buildDataSource());
@@ -221,7 +222,7 @@ final class HttpConnectorTest extends TestCase
     {
         $server = $this->startServer();
 
-        $this->expectException(HttpException::class);
+        $this->expectException(StreamException::class);
 
         try {
             $this->fetch(self::buildDataSource()->setMaxBodyLength(1));

@@ -14,7 +14,7 @@ final class HttpOptions
     // Number of redirects to follow, or 0 to disable redirects.
     private int $maxRedirects = 5;
 
-    // Maximum body length in bytes, use 0 to disable. Default 10MiB.
+    // Maximum body length in bytes. Default 10MiB.
     private int $maxBodyLength = 0x100_000 * 10;
 
     public function getTransferTimeout(): int
@@ -54,7 +54,7 @@ final class HttpOptions
     /**
      * Sets the maximum body length.
      *
-     * @param int $maxBodyLength Body length in bytes. Set to 0 to disable.
+     * @param int $maxBodyLength Body length in bytes.
      */
     public function setMaxBodyLength(int $maxBodyLength): self
     {
