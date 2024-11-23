@@ -17,8 +17,8 @@ final class FixtureFactory
         int $status = 200,
         ?string $reason = 'OK',
         array $headers = [],
-        ReadableStream $body = null,
-        Request $request = null,
+        ?ReadableStream $body = null,
+        ?Request $request = null,
     ): Response {
         return new Response(
             $protocolVersion,

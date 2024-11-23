@@ -30,8 +30,11 @@ class HttpConnector implements Connector
 
     private ConnectionPool $pool;
 
-    public function __construct(HttpOptions $options = null, TlsOptions $tlsOptions = null, CookieJar $cookieJar = null)
-    {
+    public function __construct(
+        ?HttpOptions $options = null,
+        ?TlsOptions $tlsOptions = null,
+        ?CookieJar $cookieJar = null,
+    ) {
         $this->options = $options ?: new HttpOptions;
         $this->cookieJar = $cookieJar ?: new LocalCookieJar();
         $this->pool = new UnlimitedConnectionPool($tlsOptions ? new DefaultConnectionFactory(
