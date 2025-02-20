@@ -74,7 +74,7 @@ class HttpConnector implements Connector
         $response = new HttpResponse($response);
 
         $code = $response->getStatusCode();
-        if ($code < 200 || $code >= 400) {
+        if (!$this->options->isReturningErrors() && ($code < 200 || $code >= 400)) {
             throw new HttpServerException(
                 // TODO: truncate response in exception message.
                 "HTTP server responded with error: $code \"{$response->getReasonPhrase()}\".\n\n$response",

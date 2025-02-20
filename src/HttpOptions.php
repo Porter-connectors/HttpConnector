@@ -8,6 +8,9 @@ namespace ScriptFUSION\Porter\Net\Http;
  */
 final class HttpOptions
 {
+    // True to return error responses, false to throw HttpServerException instead.
+    private bool $returnErrors = false;
+
     // Transfer timeout in milliseconds until an HTTP request is automatically aborted, use 0 to disable.
     private int $transferTimeout = 15_000;
 
@@ -16,6 +19,18 @@ final class HttpOptions
 
     // Maximum body length in bytes. Default 10MiB.
     private int $maxBodyLength = 0x100_000 * 10;
+
+    public function isReturningErrors(): bool
+    {
+        return $this->returnErrors;
+    }
+
+    public function willReturnErrors(bool $returnErrors = true): HttpOptions
+    {
+        $this->returnErrors = $returnErrors;
+
+        return $this;
+    }
 
     public function getTransferTimeout(): int
     {

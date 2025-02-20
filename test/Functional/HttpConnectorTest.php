@@ -159,6 +159,24 @@ final class HttpConnectorTest extends TestCase
     }
 
     /**
+     * Tests that when an error is returned by the sever, and we requested errors to be returned,
+     * no exception is thrown.
+     */
+    public function testErrorResponseReturned(): void
+    {
+        $server = $this->startServer();
+        $this->connector = new HttpConnector((new HttpOptions)->willReturnErrors());
+
+        try {
+            $response = $this->fetch(self::buildDataSource('404.php'));
+        } finally {
+            $this->stopServer($server);
+        }
+
+        self::assertSame(404, $response->getStatusCode());
+    }
+
+    /**
      * Tests that the response object is built correctly when a server redirects to another page.
      */
     public function testRedirect(): void
