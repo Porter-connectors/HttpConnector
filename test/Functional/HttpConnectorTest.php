@@ -209,7 +209,7 @@ final class HttpConnectorTest extends TestCase
         $this->expectException(StreamException::class);
 
         try {
-            $this->fetch(self::buildDataSource('big.php'));
+            $this->fetch(self::buildDataSource('big.php'))->getBody();
         } finally {
             $this->stopServer($server);
         }
@@ -227,7 +227,7 @@ final class HttpConnectorTest extends TestCase
         $this->expectException(StreamException::class);
 
         try {
-            $this->fetch(self::buildDataSource());
+            $this->fetch(self::buildDataSource())->getBody();
         } finally {
             $this->stopServer($server);
         }
@@ -243,10 +243,23 @@ final class HttpConnectorTest extends TestCase
         $this->expectException(StreamException::class);
 
         try {
-            $this->fetch(self::buildDataSource()->setMaxBodyLength(1));
+            $this->fetch(self::buildDataSource()->setMaxBodyLength(1))->getBody();
         } finally {
             $this->stopServer($server);
         }
+    }
+
+    public function testUserAgentOverride(): void
+    {
+        $server = $this->startServer();
+
+        try {
+            $response = $this->fetch(self::buildDataSource()->addHeader($h = 'user-agent', $v = 'Alfa'))->getBody();
+        } finally {
+            $this->stopServer($server);
+        }
+
+        self::assertMatchesRegularExpression("[^$h: $v$]m", $response);
     }
 
     private function startServer(): Process
