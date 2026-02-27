@@ -63,6 +63,11 @@ final class HttpResponse
         return $this->bodyBuffer ??= $this->body->buffer();
     }
 
+    public function getStream(): Payload
+    {
+        return $this->body;
+    }
+
     public function getStatusCode(): int
     {
         return $this->statusCode;
