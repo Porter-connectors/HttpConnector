@@ -20,6 +20,9 @@ final class HttpOptions
     // Maximum body length in bytes. Default 10MiB.
     private int $maxBodyLength = 0x100_000 * 10;
 
+    // HTTP protocol versions to negotiate, in preference order. Default is the client's choice.
+    private array $protocolVersions = [];
+
     public function isReturningErrors(): bool
     {
         return $this->returnErrors;
@@ -74,6 +77,30 @@ final class HttpOptions
     public function setMaxBodyLength(int $maxBodyLength): self
     {
         $this->maxBodyLength = $maxBodyLength;
+
+        return $this;
+    }
+
+    /**
+     * Gets the HTTP protocol versions to negotiate, in preference order.
+     *
+     * @return list<string> Protocol versions, or an empty list for the client's default.
+     */
+    public function getProtocolVersions(): array
+    {
+        return $this->protocolVersions;
+    }
+
+    /**
+     * Sets the HTTP protocol versions to negotiate, in preference order.
+     *
+     * Passing an empty list restores the HTTP client's default.
+     *
+     * @param list<string> $protocolVersions Protocol versions, e.g. ["1.0", "1.1", "2"].
+     */
+    public function setProtocolVersions(array $protocolVersions): self
+    {
+        $this->protocolVersions = $protocolVersions;
 
         return $this;
     }

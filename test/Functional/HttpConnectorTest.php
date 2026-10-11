@@ -262,6 +262,28 @@ final class HttpConnectorTest extends TestCase
         self::assertMatchesRegularExpression("[^$h: $v$]m", $response);
     }
 
+    /**
+     * Tests that when HTTP/1.1 is forced via options, an explicit Host header override is sent to
+     * the server verbatim. HTTP/2 connections drop Host header overrides, so the two features are
+     * only compatible together when HTTP/1.1 is negotiated.
+     */
+    public function testProtocolVersionForcesHttp11(): void
+    {
+        $server = $this->startServer();
+        $this->connector = new HttpConnector((new HttpOptions)->setProtocolVersions(['1.1']));
+
+        try {
+            $response = $this->fetch(
+                self::buildDataSource()->addHeader('Host', $host = 'override.example.com')
+            );
+        } finally {
+            $this->stopServer($server);
+        }
+
+        self::assertSame('1.1', $response->getProtocolVersion());
+        self::assertMatchesRegularExpression("[^Host: $host$]m", $response->getBody(), 'Host override sent.');
+    }
+
     private function startServer(): Process
     {
         $server = new Process([PHP_BINARY, '-S', self::HOST, '-t', self::DIR]);
